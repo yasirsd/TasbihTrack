@@ -6,17 +6,18 @@ import { withTransaction } from "@/lib/server/db";
 import { requireUser } from "@/lib/server/session";
 import { entryFromRow, type EntryRow, type TrackerRow } from "@/lib/server/serializers";
 import { createEntrySchema, updateEntrySchema } from "@/lib/validation";
-import type { CreateEntryInput, ProgressEntry, UpdateEntryInput } from "@/lib/data/types";
+import type { CreateEntryInput, CreateEntryResult, ProgressEntry, UpdateEntryInput } from "@/lib/data/types";
 import { crossedMilestones } from "@/lib/calculations/milestones";
 import type { PoolClient } from "pg";
 import { markCompleted, todayLocalKey } from "@/lib/server/tracker-helpers";
 
-export async function createEntryAction(input: CreateEntryInput): Promise<ProgressEntry> {
+export async function createEntryAction(input: CreateEntryInput): Promise<CreateEntryResult> {
   const user = await requireUser();
   const parsed = createEntrySchema.parse(input);
   // Idempotency: if the client provides a UUID (offline-queue flush,
   // retried mutation), we insert with that id and ON CONFLICT DO NOTHING.
-  // A repeat of the same id is a no-op and returns the existing row.
+  // A repeat of the same id is a no-op and returns the existing row with
+  // newMilestones=[] so no celebration replays.
   const id = parsed.clientId ?? crypto.randomUUID();
   return withTransaction(async (client) => {
     const trackerRow = await client.query<TrackerRow>(
@@ -41,20 +42,21 @@ export async function createEntryAction(input: CreateEntryInput): Promise<Progre
       ],
     );
     if (insert.rowCount === 0) {
-      // Duplicate submit / retry — return the row that already exists,
-      // scoped to this user so a colliding id from another account 404s.
       const existing = await client.query<EntryRow>(
         `select * from progress_entries where id = $1 and user_id = $2 and deleted_at is null`,
         [id, user.id],
       );
       if (existing.rowCount === 0) throw new Error("Entry not found");
-      return entryFromRow(existing.rows[0]);
+      return { entry: entryFromRow(existing.rows[0]), newMilestones: [], completed: false };
     }
     const nextTotal = prevTotal + parsed.amount;
     const target = Number(tracker.target_count);
     const crossed = crossedMilestones(prevTotal, nextTotal, target);
+    // Filter out 100 — completion is reported separately so the client can
+    // route it to the completion celebration flow rather than a milestone one.
+    const newMilestones: number[] = [];
     for (const pct of crossed) {
-      await client.query(
+      const inserted = await client.query(
         `insert into tracker_events (user_id, tracker_id, event_type, event_data)
          values ($1, $2, 'milestone_reached', $3::jsonb)
          on conflict do nothing`,
@@ -64,11 +66,18 @@ export async function createEntryAction(input: CreateEntryInput): Promise<Progre
           JSON.stringify({ percent: pct, totalAtTime: nextTotal, targetAtTime: target }),
         ],
       );
+      if (inserted.rowCount && inserted.rowCount > 0 && pct < 100) newMilestones.push(pct);
     }
+    let completed = false;
     if (nextTotal >= target && tracker.status === "active") {
       await markCompleted(client, user.id, parsed.trackerId, nextTotal);
+      completed = true;
     }
-    return entryFromRow(insert.rows[0]);
+    return {
+      entry: entryFromRow(insert.rows[0]),
+      newMilestones,
+      completed,
+    };
   });
 }
 

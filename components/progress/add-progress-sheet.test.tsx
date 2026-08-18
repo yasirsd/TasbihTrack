@@ -58,6 +58,18 @@ vi.mock("@/components/ui/toast", () => ({
   ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("@/components/celebration/celebration-context", () => ({
+  useCelebration: () => ({ celebrate: vi.fn(), dismiss: vi.fn(), request: null }),
+  pickCelebration: () => null,
+}));
+
+// TasbihDatePicker uses react-day-picker + Popover; stub for the input-focused tests.
+vi.mock("@/components/date/tasbih-date-picker", () => ({
+  TasbihDatePicker: ({ value }: { value?: string }) => (
+    <div data-testid="date-picker">{value ?? ""}</div>
+  ),
+}));
+
 // Radix Dialog uses portals and browser-only refs — mock the Sheet to
 // render inline so we can query it.
 vi.mock("@/components/ui/sheet", () => {

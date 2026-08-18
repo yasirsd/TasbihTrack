@@ -57,6 +57,7 @@ export interface ProgressEntry {
 }
 
 export interface CreateTrackerInput {
+  clientId?: string;
   name: string;
   arabicText?: string;
   description?: string;
@@ -64,6 +65,18 @@ export interface CreateTrackerInput {
   dailyTarget?: number;
   targetDate?: string;
   startingProgress?: number;
+}
+
+/**
+ * Extended response for adding a progress entry. `newMilestones` lists any
+ * milestone percentages the entry crossed (25/50/75 or full completion is
+ * captured by `completed=true`). The client uses this to decide whether to
+ * show a celebration.
+ */
+export interface CreateEntryResult {
+  entry: ProgressEntry;
+  newMilestones: number[];
+  completed: boolean;
 }
 
 export interface UpdateTrackerInput {

@@ -1,12 +1,13 @@
 "use client";
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
+import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
 import type { Tracker } from "@/lib/data/types";
 
 export function EditTrackerSheet({
@@ -25,7 +26,7 @@ export function EditTrackerSheet({
   const [dailyTarget, setDailyTarget] = React.useState("");
   const [arabic, setArabic] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [date, setDate] = React.useState("");
+  const [targetDate, setTargetDate] = React.useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmTargetChange, setConfirmTargetChange] = React.useState(false);
 
@@ -36,16 +37,18 @@ export function EditTrackerSheet({
     setDailyTarget(tracker.dailyTarget ? String(tracker.dailyTarget) : "");
     setArabic(tracker.arabicText ?? "");
     setDescription(tracker.description ?? "");
-    setDate(tracker.targetDate ?? "");
+    setTargetDate(tracker.targetDate ?? undefined);
     setConfirmTargetChange(false);
+    setSubmitting(false);
   }, [tracker, open]);
 
   const targetChanged = tracker && Number(target) !== tracker.targetCount;
   const dailyChanged =
     tracker && Number(dailyTarget || 0) !== Number(tracker.dailyTarget ?? 0);
+  const dateChanged = tracker && (targetDate ?? undefined) !== (tracker.targetDate ?? undefined);
 
   async function submit() {
-    if (!tracker) return;
+    if (!tracker || submitting) return;
     const t = Number(target);
     if (!name.trim() || !Number.isFinite(t) || t <= 0) return;
     if (targetChanged && !confirmTargetChange) {
@@ -57,15 +60,14 @@ export function EditTrackerSheet({
       await updateTracker(tracker.id, {
         name,
         targetCount: t,
-        dailyTarget:
-          dailyChanged
-            ? dailyTarget
-              ? Number(dailyTarget)
-              : null
-            : undefined,
+        dailyTarget: dailyChanged
+          ? dailyTarget
+            ? Number(dailyTarget)
+            : null
+          : undefined,
         arabicText: arabic || undefined,
         description: description || undefined,
-        targetDate: date || null,
+        targetDate: dateChanged ? (targetDate ?? null) : undefined,
       });
       toast({ title: "Changes saved", tone: "success" });
       onOpenChange(false);
@@ -75,7 +77,7 @@ export function EditTrackerSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(v) => (!submitting || v) && onOpenChange(v)}>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Edit Goal</SheetTitle>
@@ -83,7 +85,7 @@ export function EditTrackerSheet({
         <div className="space-y-4">
           <div className="grid gap-2">
             <Label htmlFor="ename">Name</Label>
-            <Input id="ename" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input id="ename" value={name} onChange={(e) => setName(e.target.value)} disabled={submitting} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="etarget">Target</Label>
@@ -92,6 +94,7 @@ export function EditTrackerSheet({
               inputMode="numeric"
               value={target}
               onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
+              disabled={submitting}
             />
           </div>
           <div className="grid gap-2">
@@ -102,6 +105,18 @@ export function EditTrackerSheet({
               value={dailyTarget}
               onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="—"
+              disabled={submitting}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="edate">Target date</Label>
+            <TasbihDatePicker
+              id="edate"
+              value={targetDate}
+              onChange={setTargetDate}
+              placeholder="No target date"
+              disabled={submitting}
+              aria-label="Target date"
             />
           </div>
           <div className="grid gap-2">
@@ -111,6 +126,7 @@ export function EditTrackerSheet({
               dir="rtl"
               value={arabic}
               onChange={(e) => setArabic(e.target.value)}
+              disabled={submitting}
             />
           </div>
           <div className="grid gap-2">
@@ -120,23 +136,28 @@ export function EditTrackerSheet({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={submitting}
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edate">Target date</Label>
-            <Input id="edate" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
           {confirmTargetChange && targetChanged && tracker && (
             <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3 text-sm">
-              Changing target from {tracker.targetCount.toLocaleString()} to {Number(target).toLocaleString()}.
-              History and milestones are preserved in the Journey. Tap Save again to confirm.
+              Changing target from {tracker.targetCount.toLocaleString()} to{" "}
+              {Number(target).toLocaleString()}. History and milestones are preserved in the
+              Journey. Tap Save again to confirm.
             </div>
           )}
 
-          <Button variant="crimson" size="lg" className="w-full" onClick={submit} disabled={submitting}>
+          <PendingButton
+            variant="crimson"
+            size="lg"
+            className="w-full"
+            pending={submitting}
+            pendingLabel="Saving…"
+            onClick={submit}
+          >
             Save changes
-          </Button>
+          </PendingButton>
         </div>
       </SheetContent>
     </Sheet>

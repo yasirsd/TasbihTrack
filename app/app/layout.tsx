@@ -11,6 +11,8 @@ import { AddSheetContext, useAddSheet } from "@/components/navigation/add-sheet-
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { ImportLocalDialog } from "@/components/migration/import-local-dialog";
 import { MigrationProvider } from "@/components/migration/migration-context";
+import { CelebrationProvider } from "@/components/celebration/celebration-context";
+import { MilestoneCelebration } from "@/components/celebration/milestone-celebration";
 import { SyncIndicator } from "@/components/pwa/sync-indicator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -44,6 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <DataProvider>
      <MigrationProvider>
+      <CelebrationProvider>
       <AddSheetContext.Provider
         value={{
           openAdd: (id) => {
@@ -70,8 +73,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             initialTrackerId={initialTrackerId}
           />
           <CreateTrackerSheet open={createOpen} onOpenChange={setCreateOpen} />
+          <MilestoneCelebration />
         </div>
       </AddSheetContext.Provider>
+      </CelebrationProvider>
      </MigrationProvider>
     </DataProvider>
   );

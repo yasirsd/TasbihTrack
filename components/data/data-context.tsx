@@ -14,6 +14,7 @@ import {
 } from "@/lib/cache/local-cache";
 import type {
   CreateEntryInput,
+  CreateEntryResult,
   CreateTrackerInput,
   ProgressEntry,
   Tracker,
@@ -35,7 +36,7 @@ interface DataContextValue {
   updateTracker: (id: string, patch: UpdateTrackerInput) => Promise<Tracker>;
   deleteTracker: (id: string) => Promise<void>;
   reorderTrackers: (ids: string[]) => Promise<void>;
-  addEntry: (input: CreateEntryInput) => Promise<ProgressEntry>;
+  addEntry: (input: CreateEntryInput) => Promise<CreateEntryResult>;
   updateEntry: (id: string, patch: UpdateEntryInput) => Promise<ProgressEntry>;
   deleteEntry: (id: string) => Promise<void>;
   reload: (options?: { force?: boolean }) => Promise<void>;
@@ -334,16 +335,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (!isOnline()) {
         await enqueueLocal();
-        return optimistic;
+        return { entry: optimistic, newMilestones: [], completed: false };
       }
 
       try {
-        const server = await cloudRepositories.createEntry({ ...input, clientId: id });
-        setEntries((prev) => prev.map((e) => (e.id === id ? server : e)));
-        // No unconditional reload — the server row is authoritative for the
-        // new entry, and milestone/completion state is already updated in-tx.
-        // A subsequent visibility/focus refresh (throttled) picks up events.
-        return server;
+        const result = await cloudRepositories.createEntry({ ...input, clientId: id });
+        setEntries((prev) => prev.map((e) => (e.id === id ? result.entry : e)));
+        return result;
       } catch (err) {
         if (err instanceof UnauthorizedError) {
           setEntries((prev) => prev.filter((e) => e.id !== id));
@@ -352,7 +350,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         if (isNetworkError(err)) {
           await enqueueLocal();
-          return optimistic;
+          return { entry: optimistic, newMilestones: [], completed: false };
         }
         setEntries((prev) => prev.filter((e) => e.id !== id));
         throw err;

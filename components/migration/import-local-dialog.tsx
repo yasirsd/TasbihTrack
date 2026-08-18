@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import { useAuth } from "@/components/auth/auth-context";
 import { useData } from "@/components/data/data-context";
 import { useMigration } from "@/components/migration/migration-context";
@@ -100,9 +101,14 @@ export function ImportLocalDialog() {
           <Button variant="ghost" onClick={closeDialog} disabled={busy}>
             Not now
           </Button>
-          <Button variant="crimson" onClick={handleImport} disabled={busy}>
-            {busy ? "Importing…" : "Import to my account"}
-          </Button>
+          <PendingButton
+            variant="crimson"
+            pending={busy}
+            pendingLabel="Importing…"
+            onClick={handleImport}
+          >
+            Import to my account
+          </PendingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

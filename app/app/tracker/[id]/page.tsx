@@ -8,6 +8,7 @@ import { useData } from "@/components/data/data-context";
 import { useAddSheet } from "@/components/navigation/add-sheet-context";
 import { computeTrackerStats, groupByDay } from "@/lib/calculations/progress";
 import { computePace } from "@/lib/calculations/pace";
+import { computeTodayTarget } from "@/lib/calculations/today-target";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export default function TrackerDetailPage() {
   );
   const stats = tracker ? computeTrackerStats(tracker, trackerEntries) : null;
   const pace = tracker ? computePace(tracker, trackerEntries) : null;
+  const todayTarget = tracker ? computeTodayTarget(tracker, trackerEntries) : null;
   const grouped = React.useMemo(() => groupByDay(trackerEntries), [trackerEntries]);
 
   if (!tracker) {
@@ -230,25 +232,57 @@ export default function TrackerDetailPage() {
         </section>
       )}
 
-      {!focused && tracker.dailyTarget && (
+      {!focused && todayTarget && (
         <section className="rounded-3xl border border-border/60 bg-card p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Daily target</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold tabular-nums">
-              {formatNumber(stats!.today)}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              / {formatNumber(tracker.dailyTarget)}
-            </span>
-          </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
-              style={{
-                width: `${Math.min(100, (stats!.today / tracker.dailyTarget) * 100)}%`,
-              }}
-            />
-          </div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Today&apos;s target
+          </p>
+          {todayTarget.source === "none" ? (
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Set a target date and we&apos;ll calculate today&apos;s recommended target.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                Set date
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tabular-nums">
+                  {formatNumber(todayTarget.todayCompleted)}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  / {formatNumber(todayTarget.target)}
+                </span>
+                {todayTarget.reached && (
+                  <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gold-deep">
+                    Target reached
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
+                  style={{
+                    width: `${
+                      todayTarget.target > 0
+                        ? Math.min(100, (todayTarget.todayCompleted / todayTarget.target) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {todayTarget.remainingToday > 0
+                  ? `${formatNumber(todayTarget.remainingToday)} remaining today`
+                  : "Today's target reached — Alhamdulillah."}
+                {todayTarget.source === "pace" && (
+                  <span className="ml-1">· derived from your target date</span>
+                )}
+              </p>
+            </>
+          )}
         </section>
       )}
 

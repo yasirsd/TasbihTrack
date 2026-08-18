@@ -1,30 +1,24 @@
 "use client";
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
-import { todayKey, formatLongDate, toLocalDateKey } from "@/lib/date-utils";
+import { todayKey } from "@/lib/date-utils";
 import { formatNumber } from "@/lib/format";
 import { smartQuickAmounts } from "@/lib/calculations/pace";
+import { useCelebration, pickCelebration } from "@/components/celebration/celebration-context";
+import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
 import type { Tracker } from "@/lib/data/types";
 
 /**
- * P0 bug it fixes:
- *
- * The previous reset effect was `useEffect(() => { if (open) reset(); }, [open,
- * initialTrackerId, active])`. `active` is derived from `trackers`, which gets
- * a fresh reference on every background sync from DataProvider. That meant any
- * `reload()` — from focus, `online`, mutation reconciliation, queue flush, or
- * even React 19 StrictMode double-invoke — re-ran the reset while the sheet
- * was still open, wiping the amount the user was typing.
- *
- * The fix is to make draft state a pure local session: reset only on the
- * false → true transition of `open`, and read latest `initialTrackerId` /
- * `active` from refs so the effect can honestly depend on `open` alone.
+ * Draft state is a pure local session (Phase 4A regression test in place).
+ * Adds pending state (disables submit + quick chips + date picker to prevent
+ * duplicate-submits) and celebration triggering from the server's typed
+ * `newMilestones` / `completed` response.
  */
 export function AddProgressSheet({
   open,
@@ -37,6 +31,7 @@ export function AddProgressSheet({
 }) {
   const { trackers, entries, addEntry, deleteEntry } = useData();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
 
   const active = React.useMemo(
     () => trackers.filter((t) => t.status === "active" || t.status === "completed"),
@@ -50,8 +45,6 @@ export function AddProgressSheet({
   const [submitting, setSubmitting] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Refs let the reset effect read the *latest* initialTrackerId and active
-  // list at the moment of open without adding them to the dep array.
   const initialTrackerIdRef = React.useRef(initialTrackerId);
   const activeRef = React.useRef(active);
   initialTrackerIdRef.current = initialTrackerId;
@@ -63,11 +56,11 @@ export function AddProgressSheet({
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = open;
     if (!open || wasOpen) return;
-    // Just opened — start a fresh session.
     setAmount("");
     setNote("");
     setDateKey(todayKey());
     setTrackerId(initialTrackerIdRef.current ?? activeRef.current[0]?.id);
+    setSubmitting(false);
   }, [open]);
 
   const selected = trackers.find((t) => t.id === trackerId);
@@ -81,29 +74,37 @@ export function AddProgressSheet({
   async function submit() {
     if (!selected || !Number.isFinite(numeric) || numeric <= 0 || submitting) return;
     setSubmitting(true);
-    // Snapshot current draft so a mid-flight data refresh cannot affect us.
+    // Snapshot: a mid-flight data refresh cannot affect these values.
     const draft = { amount: numeric, entryDate: dateKey, note: note.trim() || undefined };
-    // Optimistic close: the entry is already applied optimistically inside
-    // addEntry; we don't need to block on the network round trip.
-    onOpenChange(false);
     try {
-      const entry = await addEntry({
+      const result = await addEntry({
         trackerId: selected.id,
         amount: draft.amount,
         entryDate: draft.entryDate,
         note: draft.note,
       });
-      toast({
-        title: "Progress added",
-        description: `+${formatNumber(draft.amount)} to ${selected.name}`,
-        tone: "success",
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void deleteEntry(entry.id);
+      onOpenChange(false);
+      // Choose celebration (completion beats milestone; highest milestone wins).
+      const celebration = pickCelebration(result.newMilestones, result.completed);
+      if (celebration) {
+        // Total after this entry is authoritative from the server row.
+        const totalAfter = entries
+          .filter((e) => e.trackerId === selected.id)
+          .reduce((a, b) => a + b.amount, 0) + draft.amount;
+        celebrate({ kind: celebration, tracker: selected, completed: totalAfter });
+      } else {
+        toast({
+          title: "Progress added",
+          description: `+${formatNumber(draft.amount)} to ${selected.name}`,
+          tone: "success",
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void deleteEntry(result.entry.id);
+            },
           },
-        },
-      });
+        });
+      }
     } catch (e) {
       toast({ title: "Couldn't save", description: (e as Error).message, tone: "destructive" });
     } finally {
@@ -112,19 +113,15 @@ export function AddProgressSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(v) => (!submitting || v) && onOpenChange(v)}>
       <SheetContent
         onOpenAutoFocus={(e) => {
-          // Focus the amount field directly instead of Radix's default first-
-          // focusable, without racing a setTimeout.
           e.preventDefault();
           inputRef.current?.focus({ preventScroll: true });
         }}
       >
         <SheetHeader>
-          <SheetTitle>
-            {selected ? `Add to ${selected.name}` : "Add progress"}
-          </SheetTitle>
+          <SheetTitle>{selected ? `Add to ${selected.name}` : "Add progress"}</SheetTitle>
           <SheetDescription>How much did you complete?</SheetDescription>
         </SheetHeader>
 
@@ -139,6 +136,7 @@ export function AddProgressSheet({
             active={active}
             trackerId={trackerId}
             onSelect={setTrackerId}
+            disabled={submitting}
           />
         )}
 
@@ -153,29 +151,26 @@ export function AddProgressSheet({
               placeholder="0"
               className="h-20 rounded-3xl text-center text-5xl font-semibold tabular-nums"
               aria-label="Amount"
+              disabled={submitting}
             />
             <QuickAmountRow
               amounts={quickAmounts}
               onAdd={(q) => setAmount((prev) => String((Number(prev) || 0) + q))}
+              disabled={submitting}
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
+            <Label htmlFor="entry-date">Date</Label>
+            <TasbihDatePicker
+              id="entry-date"
               value={dateKey}
-              max={todayKey()}
-              onChange={(e) =>
-                setDateKey(
-                  e.target.value
-                    ? toLocalDateKey(new Date(e.target.value + "T00:00"))
-                    : todayKey(),
-                )
-              }
+              onChange={(v) => setDateKey(v ?? todayKey())}
+              maxKey={todayKey()}
+              allowClear={false}
+              disabled={submitting}
+              aria-label="Entry date"
             />
-            <p className="text-xs text-muted-foreground">{formatLongDate(dateKey)}</p>
           </div>
 
           <div className="grid gap-2">
@@ -186,18 +181,21 @@ export function AddProgressSheet({
               onChange={(e) => setNote(e.target.value)}
               placeholder="e.g. after Fajr"
               rows={2}
+              disabled={submitting}
             />
           </div>
 
-          <Button
+          <PendingButton
             variant="crimson"
             size="lg"
             className="w-full"
-            disabled={submitting || !selected || numeric <= 0}
+            pending={submitting}
+            pendingLabel="Adding…"
+            disabled={!selected || numeric <= 0}
             onClick={submit}
           >
             {numeric > 0 ? `Add ${formatNumber(numeric)}` : "Add progress"}
-          </Button>
+          </PendingButton>
         </div>
       </SheetContent>
     </Sheet>
@@ -208,10 +206,12 @@ const TrackerPicker = React.memo(function TrackerPicker({
   active,
   trackerId,
   onSelect,
+  disabled,
 }: {
   active: Tracker[];
   trackerId: string | undefined;
   onSelect: (id: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="mb-4">
@@ -221,8 +221,9 @@ const TrackerPicker = React.memo(function TrackerPicker({
           <button
             key={t.id}
             type="button"
+            disabled={disabled}
             onClick={() => onSelect(t.id)}
-            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+            className={`rounded-full border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 ${
               t.id === trackerId
                 ? "border-foreground/30 bg-foreground text-background"
                 : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/40"
@@ -239,9 +240,11 @@ const TrackerPicker = React.memo(function TrackerPicker({
 const QuickAmountRow = React.memo(function QuickAmountRow({
   amounts,
   onAdd,
+  disabled,
 }: {
   amounts: number[];
   onAdd: (n: number) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -249,8 +252,9 @@ const QuickAmountRow = React.memo(function QuickAmountRow({
         <button
           key={q}
           type="button"
+          disabled={disabled}
           onClick={() => onAdd(q)}
-          className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
+          className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted disabled:opacity-50"
         >
           +{formatNumber(q)}
         </button>
@@ -258,4 +262,3 @@ const QuickAmountRow = React.memo(function QuickAmountRow({
     </div>
   );
 });
-

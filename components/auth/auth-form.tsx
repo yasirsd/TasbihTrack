@@ -2,8 +2,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/components/auth/auth-context";
@@ -146,16 +145,16 @@ export function AuthForm() {
         </div>
       )}
 
-      <Button type="submit" variant="crimson" size="lg" className="w-full" disabled={submitting}>
-        {submitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {mode === "signIn" ? "Signing in…" : "Creating…"}
-          </>
-        ) : (
-          mode === "signIn" ? "Sign In" : "Create Account"
-        )}
-      </Button>
+      <PendingButton
+        type="submit"
+        variant="crimson"
+        size="lg"
+        className="w-full"
+        pending={submitting}
+        pendingLabel={mode === "signIn" ? "Signing in…" : "Creating account…"}
+      >
+        {mode === "signIn" ? "Sign In" : "Create Account"}
+      </PendingButton>
 
       <p className="text-center text-xs text-muted-foreground">
         {hasAccounts

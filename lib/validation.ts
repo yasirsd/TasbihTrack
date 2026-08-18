@@ -24,6 +24,7 @@ export const positiveIntSchema = z
   .max(1_000_000_000_000, "That number is too large.");
 
 export const createTrackerSchema = z.object({
+  clientId: z.string().uuid().optional(),
   name: z.string().trim().min(1, "Please give this goal a name.").max(120),
   arabicText: z.string().trim().max(300).optional(),
   description: z.string().trim().max(600).optional(),

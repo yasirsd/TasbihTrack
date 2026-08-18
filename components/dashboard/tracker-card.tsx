@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import type { Tracker, ProgressEntry } from "@/lib/data/types";
 import { computeTrackerStats } from "@/lib/calculations/progress";
 import { computePace } from "@/lib/calculations/pace";
+import { computeTodayTarget } from "@/lib/calculations/today-target";
 import { formatNumber, formatPercent, formatSigned } from "@/lib/format";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function TrackerCard({
   const paused = tracker.status === "paused";
   const completed = tracker.status === "completed";
   const paceLabel = paceLabelFor(pace);
+  const todayTarget = computeTodayTarget(tracker, entries);
 
   return (
     <motion.article
@@ -166,10 +168,12 @@ export function TrackerCard({
             {formatNumber(stats.remaining)} remaining
             {stats.today > 0 && <> · <span className="text-foreground">{formatSigned(stats.today)} today</span></>}
           </p>
-          {tracker.dailyTarget && !completed && (
+          {!completed && todayTarget.source !== "none" && todayTarget.target > 0 && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Today {formatNumber(stats.today)} / {formatNumber(tracker.dailyTarget)}
-              {stats.today >= tracker.dailyTarget && " ✓"}
+              Today {formatNumber(todayTarget.todayCompleted)} / {formatNumber(todayTarget.target)}
+              {todayTarget.reached && (
+                <span className="ml-1 font-medium text-gold-deep">· reached</span>
+              )}
             </p>
           )}
         </div>

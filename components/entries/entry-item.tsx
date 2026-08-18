@@ -9,9 +9,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import { Textarea } from "@/components/ui/textarea";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
+import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
+import { todayKey } from "@/lib/date-utils";
 
 export function EntryItem({
   entry,
@@ -72,32 +75,54 @@ function EditEntrySheet({
   const [amount, setAmount] = React.useState(String(entry.amount));
   const [date, setDate] = React.useState(entry.entryDate);
   const [note, setNote] = React.useState(entry.note ?? "");
+  const [saving, setSaving] = React.useState(false);
+  const [removing, setRemoving] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
       setAmount(String(entry.amount));
       setDate(entry.entryDate);
       setNote(entry.note ?? "");
+      setSaving(false);
+      setRemoving(false);
     }
   }, [open, entry]);
 
   async function save() {
+    if (saving || removing) return;
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) return;
-    await updateEntry(entry.id, { amount: n, entryDate: date, note: note.trim() || null });
-    toast({ title: "Changes saved", tone: "success" });
-    onOpenChange(false);
+    setSaving(true);
+    try {
+      await updateEntry(entry.id, { amount: n, entryDate: date, note: note.trim() || null });
+      toast({ title: "Changes saved", tone: "success" });
+      onOpenChange(false);
+    } catch (e) {
+      toast({ title: "Couldn't save", description: (e as Error).message, tone: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function remove() {
+    if (saving || removing) return;
     if (!confirm("Delete this entry?")) return;
-    await deleteEntry(entry.id);
-    toast({ title: "Entry deleted" });
-    onOpenChange(false);
+    setRemoving(true);
+    try {
+      await deleteEntry(entry.id);
+      toast({ title: "Entry deleted" });
+      onOpenChange(false);
+    } catch (e) {
+      toast({ title: "Couldn't delete", description: (e as Error).message, tone: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
   }
 
+  const busy = saving || removing;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(v) => (!busy || v) && onOpenChange(v)}>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Edit entry</SheetTitle>
@@ -112,24 +137,46 @@ function EditEntrySheet({
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
               className="text-2xl font-semibold tabular-nums"
+              disabled={busy}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="ed">Date</Label>
-            <Input id="ed" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <p className="text-xs text-muted-foreground">{formatLongDate(date)}</p>
+            <TasbihDatePicker
+              id="ed"
+              value={date}
+              onChange={(v) => setDate(v ?? todayKey())}
+              maxKey={todayKey()}
+              allowClear={false}
+              disabled={busy}
+              aria-label="Entry date"
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="en">Note</Label>
-            <Textarea id="en" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+            <Textarea id="en" rows={2} value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
           </div>
           <div className="flex gap-2">
-            <Button variant="crimson" onClick={save} className="flex-1">
+            <PendingButton
+              variant="crimson"
+              pending={saving}
+              pendingLabel="Saving…"
+              disabled={removing}
+              onClick={save}
+              className="flex-1"
+            >
               <Pencil className="h-4 w-4" /> Save
-            </Button>
-            <Button variant="outline" onClick={remove} className="text-crimson">
+            </PendingButton>
+            <PendingButton
+              variant="outline"
+              pending={removing}
+              pendingLabel="Deleting…"
+              disabled={saving}
+              onClick={remove}
+              className="text-crimson"
+            >
               <Trash2 className="h-4 w-4" /> Delete
-            </Button>
+            </PendingButton>
           </div>
         </div>
       </SheetContent>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/server/actions/entry-actions";
 import type {
   CreateEntryInput,
+  CreateEntryResult,
   CreateTrackerInput,
   ProgressEntry,
   Tracker,
@@ -61,7 +62,7 @@ export const cloudRepositories = {
   async reorderTrackers(ids: string[]): Promise<void> {
     return guarded(() => reorderTrackersAction(ids));
   },
-  async createEntry(input: CreateEntryInput): Promise<ProgressEntry> {
+  async createEntry(input: CreateEntryInput): Promise<CreateEntryResult> {
     return guarded(() => createEntryAction(input));
   },
   async updateEntry(id: string, patch: UpdateEntryInput): Promise<ProgressEntry> {

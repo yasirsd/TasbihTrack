@@ -10,6 +10,7 @@ import type { JourneyEvent } from "@/lib/data/journey-types";
 import { crossedMilestones } from "@/lib/calculations/milestones";
 import type { PoolClient } from "pg";
 import { markCompleted, todayLocalKey } from "@/lib/server/tracker-helpers";
+import crypto from "node:crypto";
 
 export interface ListResult {
   trackers: Tracker[];
@@ -54,6 +55,10 @@ export async function trackerEventsAction(trackerId: string): Promise<JourneyEve
 export async function createTrackerAction(input: CreateTrackerInput): Promise<Tracker> {
   const user = await requireUser();
   const parsed = createTrackerSchema.parse(input);
+  // Idempotency: caller may pass a stable client UUID for the current
+  // submission lifecycle. A retried request with the same id is a no-op that
+  // returns the existing row instead of creating a duplicate tracker.
+  const id = parsed.clientId ?? crypto.randomUUID();
   return withTransaction(async (client) => {
     const nextOrder = await client.query<{ next_order: number }>(
       `select coalesce(max(sort_order) + 1, 0)::int as next_order
@@ -63,10 +68,12 @@ export async function createTrackerAction(input: CreateTrackerInput): Promise<Tr
     const sort = nextOrder.rows[0]?.next_order ?? 0;
     const inserted = await client.query<TrackerRow>(
       `insert into trackers
-         (user_id, name, arabic_text, description, target_count, daily_target, target_date, sort_order)
-       values ($1,$2,$3,$4,$5,$6,$7,$8)
+         (id, user_id, name, arabic_text, description, target_count, daily_target, target_date, sort_order)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       on conflict (id) do nothing
        returning *`,
       [
+        id,
         user.id,
         parsed.name,
         parsed.arabicText ?? null,
@@ -77,6 +84,16 @@ export async function createTrackerAction(input: CreateTrackerInput): Promise<Tr
         sort,
       ],
     );
+    if (inserted.rowCount === 0) {
+      // Retry of an already-persisted create — return the existing tracker
+      // scoped to this user so a colliding id from another account 404s.
+      const existing = await client.query<TrackerRow>(
+        `select * from trackers where id = $1 and user_id = $2 and deleted_at is null`,
+        [id, user.id],
+      );
+      if (existing.rowCount === 0) throw new Error("Tracker not found");
+      return trackerFromRow(existing.rows[0]);
+    }
     const tracker = inserted.rows[0];
 
     await client.query(
