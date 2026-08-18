@@ -36,14 +36,15 @@ export default function DashboardPage() {
   const displayed = [...active, ...completed];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <motion.header
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="px-1"
       >
         <p className="text-sm text-muted-foreground">Assalamu Alaikum,</p>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="mt-0.5 text-3xl font-semibold tracking-tight">
           {session?.user.username ?? "Friend"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{greeting()}.</p>
@@ -51,14 +52,14 @@ export default function DashboardPage() {
 
       <TodaySummary entries={entries} trackers={trackers} />
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Active Goals
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            Active goals
           </h2>
           {displayed.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={openCreate}>
-              <Plus className="h-4 w-4" /> New
+            <Button variant="ghost" size="sm" onClick={openCreate} className="h-8 px-2 text-xs">
+              <Plus className="h-3.5 w-3.5" /> New
             </Button>
           )}
         </div>
@@ -66,7 +67,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="space-y-3">
             {[0, 1].map((i) => (
-              <div key={i} className="h-40 animate-pulse rounded-3xl bg-muted/40" />
+              <div key={i} className="h-40 animate-pulse rounded-3xl bg-muted/40 motion-reduce:animate-none" />
             ))}
           </div>
         ) : displayed.length === 0 ? (
@@ -90,15 +91,15 @@ export default function DashboardPage() {
         <section>
           <Link
             href="/app/archive"
-            className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 hover:bg-muted/30"
+            className="group flex items-center justify-between rounded-2xl border border-border/50 bg-card/40 px-4 py-3 transition-colors hover:border-border hover:bg-card"
           >
             <div>
-              <p className="text-sm font-medium">Past Journeys</p>
+              <p className="text-sm font-medium">Past journeys</p>
               <p className="text-xs text-muted-foreground">
                 {archived.length} archived {archived.length === 1 ? "goal" : "goals"}
               </p>
             </div>
-            <Archive className="h-4 w-4 text-muted-foreground" />
+            <Archive className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </Link>
         </section>
       )}

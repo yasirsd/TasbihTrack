@@ -1,12 +1,14 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Award, ChevronRight, Search } from "lucide-react";
 import { useData } from "@/components/data/data-context";
 import { computeTrackerStats } from "@/lib/calculations/progress";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { formatRelativeDate, toLocalDateKey } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export default function ArchivePage() {
   const { trackers, entries } = useData();
@@ -30,14 +32,19 @@ export default function ArchivePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Past Journeys</h1>
-          <p className="text-sm text-muted-foreground">Completed and archived goals.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Past journeys</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Goals worth revisiting.
+          </p>
         </div>
       </header>
 
       {past.length > 3 && (
         <div className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -48,34 +55,66 @@ export default function ArchivePage() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
-          {past.length === 0
-            ? "Your completed goals will live here."
-            : "No matches."}
+        <div className="rounded-3xl border border-border/60 bg-card p-10 text-center">
+          <Award className="mx-auto h-8 w-8 text-muted-foreground/40" aria-hidden />
+          <p className="mt-3 text-sm font-medium">
+            {past.length === 0
+              ? "Your completed goals will live here."
+              : "No matches."}
+          </p>
+          {past.length === 0 && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Complete or archive a goal to see it here.
+            </p>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <ul className="divide-y divide-border/40 overflow-hidden rounded-3xl border border-border/60 bg-card">
           {filtered.map((t) => {
             const s = computeTrackerStats(t, entries);
+            const closedAt = t.completedAt
+              ? formatRelativeDate(toLocalDateKey(t.completedAt))
+              : null;
             return (
-              <Link
-                key={t.id}
-                href={`/app/tracker/${t.id}`}
-                className="block rounded-3xl border border-border/60 bg-card p-4 transition-colors hover:bg-muted/30"
-              >
-                <div className="flex items-baseline justify-between">
-                  <p className="text-base font-medium">{t.name}</p>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {t.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-                  {formatNumber(s.total)} / {formatNumber(t.targetCount)} · {formatPercent(s.percent, 0)}
-                </p>
-              </Link>
+              <li key={t.id}>
+                <Link
+                  href={`/app/tracker/${t.id}`}
+                  className={cn(
+                    "group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/30",
+                    "focus-visible:bg-muted/40 focus-visible:outline-none",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-[15px] font-medium">{t.name}</p>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+                          t.status === "completed"
+                            ? "bg-gold/15 text-gold-deep"
+                            : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {t.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {formatNumber(s.total)} / {formatNumber(t.targetCount)} ·{" "}
+                      {formatPercent(s.percent, 0)}
+                      {closedAt && (
+                        <span> · {t.status === "completed" ? "completed" : "archived"} {closedAt}</span>
+                      )}
+                    </p>
+                  </div>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );

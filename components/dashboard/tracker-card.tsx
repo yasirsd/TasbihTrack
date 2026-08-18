@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 export function TrackerCard({
   tracker,
@@ -155,7 +156,7 @@ export function TrackerCard({
       </div>
 
       <div className="relative mt-4 flex items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-baseline gap-2">
             <span className="hero-number text-3xl font-semibold sm:text-4xl">
               <AnimatedNumber value={stats.total} />
@@ -166,19 +167,10 @@ export function TrackerCard({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {formatNumber(stats.remaining)} remaining
-            {stats.today > 0 && <> · <span className="text-foreground">{formatSigned(stats.today)} today</span></>}
           </p>
-          {!completed && todayTarget.source !== "none" && todayTarget.target > 0 && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Today {formatNumber(todayTarget.todayCompleted)} / {formatNumber(todayTarget.target)}
-              {todayTarget.reached && (
-                <span className="ml-1 font-medium text-gold-deep">· reached</span>
-              )}
-            </p>
-          )}
         </div>
         <div className="text-right">
-          <div className="text-sm font-semibold text-foreground">
+          <div className="text-sm font-semibold text-foreground tabular-nums">
             {formatPercent(stats.percent, stats.percent < 10 ? 1 : 0)}
           </div>
           {paceLabel && (
@@ -195,6 +187,26 @@ export function TrackerCard({
           className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
         />
       </div>
+
+      {!completed && todayTarget.source !== "none" && todayTarget.target > 0 && (
+        <div className="mt-3 flex items-baseline justify-between text-xs">
+          <span className="text-muted-foreground">
+            Today
+            {stats.today > 0 && (
+              <> · <span className="text-foreground">{formatSigned(stats.today)}</span></>
+            )}
+          </span>
+          <span
+            className={cn(
+              "tabular-nums",
+              todayTarget.reached ? "font-medium text-gold-deep" : "text-muted-foreground",
+            )}
+          >
+            {formatNumber(todayTarget.todayCompleted)} / {formatNumber(todayTarget.target)}
+            {todayTarget.reached && " ✓"}
+          </span>
+        </div>
+      )}
 
       <div className="mt-5 flex items-center gap-2">
         <Button variant="crimson" onClick={() => onAdd(tracker.id)} className="flex-1">

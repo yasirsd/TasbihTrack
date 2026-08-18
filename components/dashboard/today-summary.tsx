@@ -5,6 +5,11 @@ import { formatNumber } from "@/lib/format";
 import { todayKey } from "@/lib/date-utils";
 import type { ProgressEntry, Tracker } from "@/lib/data/types";
 
+/**
+ * Trimmed to a typography-first surface: no heavy glass card, no glow blobs.
+ * Hierarchy comes from the large number and its short caption, not from a
+ * decorated container. Sits between the greeting and the goal list.
+ */
 export function TodaySummary({
   entries,
   trackers,
@@ -20,27 +25,27 @@ export function TodaySummary({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-card via-card to-muted/40 p-6 shadow-sm"
+      className="px-1"
     >
-      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Today</p>
-      <div className="mt-2 flex items-baseline gap-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        Today
+      </p>
+      <div className="mt-1 flex items-baseline gap-2">
         <span className="hero-number text-5xl font-semibold sm:text-6xl">
           <AnimatedNumber value={total} />
         </span>
         <span className="text-sm text-muted-foreground">recitations</span>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         {total === 0
           ? activeGoals > 0
             ? "Add your first entry for today when you're ready."
             : "Create a goal to begin tracking."
           : `across ${goalCount} of ${activeGoals} ${activeGoals === 1 ? "goal" : "goals"}`}
       </p>
-      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-crimson/10 blur-3xl" />
-      <div className="absolute -bottom-10 -left-8 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
     </motion.div>
   );
 }

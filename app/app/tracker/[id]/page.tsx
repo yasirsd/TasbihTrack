@@ -223,22 +223,29 @@ export default function TrackerDetailPage() {
         )}
       </section>
 
-      {!focused && (
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SummaryTile label="Completed" value={formatNumber(stats!.total)} />
-          <SummaryTile label="Remaining" value={formatNumber(stats!.remaining)} />
-          <SummaryTile label="Today" value={formatSigned(stats!.today)} />
-          <SummaryTile label="This week" value={formatNumber(stats!.thisWeek)} />
-        </section>
-      )}
+      <Button variant="crimson" size="lg" className="w-full" onClick={() => openAdd(tracker.id)}>
+        <Plus className="h-5 w-5" /> Add Progress
+      </Button>
 
       {!focused && todayTarget && (
-        <section className="rounded-3xl border border-border/60 bg-card p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Today&apos;s target
-          </p>
+        <section
+          className={cn(
+            "rounded-3xl border p-5",
+            todayTarget.reached
+              ? "border-gold/40 bg-gradient-to-br from-gold/[0.08] via-transparent to-transparent"
+              : "border-border/60 bg-card",
+          )}
+        >
+          <div className="flex items-baseline justify-between">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Today&apos;s target
+            </p>
+            {todayTarget.source === "pace" && todayTarget.target > 0 && (
+              <p className="text-[11px] text-muted-foreground">from target date</p>
+            )}
+          </div>
           {todayTarget.source === "none" ? (
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 Set a target date and we&apos;ll calculate today&apos;s recommended target.
               </p>
@@ -249,21 +256,16 @@ export default function TrackerDetailPage() {
           ) : (
             <>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums">
+                <span className="hero-number text-3xl font-semibold tabular-nums">
                   {formatNumber(todayTarget.todayCompleted)}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   / {formatNumber(todayTarget.target)}
                 </span>
-                {todayTarget.reached && (
-                  <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gold-deep">
-                    Target reached
-                  </span>
-                )}
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
+                  className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep transition-[width] duration-500"
                   style={{
                     width: `${
                       todayTarget.target > 0
@@ -274,11 +276,10 @@ export default function TrackerDetailPage() {
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {todayTarget.remainingToday > 0
-                  ? `${formatNumber(todayTarget.remainingToday)} remaining today`
-                  : "Today's target reached — Alhamdulillah."}
-                {todayTarget.source === "pace" && (
-                  <span className="ml-1">· derived from your target date</span>
+                {todayTarget.reached ? (
+                  <span className="font-medium text-gold-deep">Today&apos;s target reached.</span>
+                ) : (
+                  `${formatNumber(todayTarget.remainingToday)} remaining today`
                 )}
               </p>
             </>
@@ -286,39 +287,54 @@ export default function TrackerDetailPage() {
         </section>
       )}
 
+      {!focused && (
+        <section className="rounded-3xl border border-border/60 bg-card p-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <MetricRow label="Completed" value={formatNumber(stats!.total)} />
+            <MetricRow label="Remaining" value={formatNumber(stats!.remaining)} />
+            <MetricRow label="Today" value={formatSigned(stats!.today)} />
+            <MetricRow label="This week" value={formatNumber(stats!.thisWeek)} />
+          </div>
+        </section>
+      )}
+
       {!focused && tracker.targetDate && pace && pace.requiredPerDay !== null && (
         <section className="rounded-3xl border border-border/60 bg-card p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Pacing</p>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <div>
-              <span className="text-2xl font-semibold">{stats!.daysRemaining ?? 0}</span>
-              <span className="ml-1 text-sm text-muted-foreground">days left</span>
-            </div>
+          <div className="flex items-baseline justify-between">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Target date
+            </p>
+            {paceLabel && <span className={`text-[11px] ${paceClass}`}>{paceLabel}</span>}
+          </div>
+          <p className="mt-1 text-lg font-medium">{formatRelativeDate(tracker.targetDate)}</p>
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+            <span>
+              <span className="font-semibold tabular-nums">{stats!.daysRemaining ?? 0}</span>{" "}
+              <span className="text-muted-foreground">days left</span>
+            </span>
             {pace.requiredPerDay > 0 && (
-              <div>
-                <span className="text-2xl font-semibold">
+              <span>
+                <span className="font-semibold tabular-nums">
                   ≈ {formatNumber(pace.requiredPerDay)}
-                </span>
-                <span className="ml-1 text-sm text-muted-foreground">per day needed</span>
-              </div>
+                </span>{" "}
+                <span className="text-muted-foreground">per day needed</span>
+              </span>
             )}
           </div>
-          {paceLabel && <p className={`mt-2 text-sm ${paceClass}`}>{paceLabel}</p>}
           {pace.estimatedCompletionKey && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               At your current pace, ≈ {formatRelativeDate(pace.estimatedCompletionKey)}
             </p>
           )}
         </section>
       )}
 
-      <Button variant="crimson" size="lg" className="w-full" onClick={() => openAdd(tracker.id)}>
-        <Plus className="h-5 w-5" /> Add Progress
-      </Button>
-
       {!focused && (
         <section>
-          <div role="tablist" className="mb-3 flex gap-1 rounded-full border border-border/50 bg-muted/30 p-1">
+          <div
+            role="tablist"
+            className="mb-4 flex gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1"
+          >
             {(
               [
                 ["activity", "Activity"],
@@ -333,10 +349,11 @@ export default function TrackerDetailPage() {
                 aria-selected={tab === id}
                 onClick={() => setTab(id)}
                 className={cn(
-                  "flex-1 rounded-full px-3 py-1.5 text-xs transition-colors",
+                  "flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   tab === id
-                    ? "bg-background text-foreground shadow"
-                    : "text-muted-foreground",
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/80",
                 )}
               >
                 {label}
@@ -380,11 +397,11 @@ export default function TrackerDetailPage() {
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function MetricRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-4">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+    <div className="space-y-0.5">
+      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p className="text-lg font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

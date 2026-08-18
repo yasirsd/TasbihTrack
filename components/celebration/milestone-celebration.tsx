@@ -42,19 +42,41 @@ export function MilestoneCelebration() {
     if (reduced) return;
 
     let cancelled = false;
-    let timers: ReturnType<typeof setTimeout>[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let canvas: HTMLCanvasElement | null = null;
+    let confettiInstance: ((opts: object) => void) | null = null;
+    let resetFn: (() => void) | null = null;
 
     (async () => {
       try {
+        // Own the canvas explicitly rather than let canvas-confetti append
+        // to <body>. This lets us guarantee fixed positioning, no scrollbar
+        // impact, pointer-events:none, and a hard removal on cleanup.
+        canvas = document.createElement("canvas");
+        canvas.style.position = "fixed";
+        canvas.style.inset = "0";
+        canvas.style.width = "100vw";
+        canvas.style.height = "100dvh";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "9999";
+        canvas.setAttribute("aria-hidden", "true");
+        document.body.appendChild(canvas);
+
         const mod = await import("canvas-confetti");
         if (cancelled) return;
-        const fire = mod.default;
+        confettiInstance = mod.default.create(canvas, {
+          resize: true,
+          useWorker: true,
+          disableForReducedMotion: true,
+        });
+        resetFn = () => (mod.default as unknown as { reset?: () => void }).reset?.();
+
         const bursts = request.kind === "completed" ? 3 : 1;
         for (let i = 0; i < bursts; i++) {
           timers.push(
             setTimeout(() => {
-              if (cancelled) return;
-              fire({
+              if (cancelled || !confettiInstance) return;
+              confettiInstance({
                 particleCount: request.kind === "completed" ? 90 : 60,
                 spread: 70,
                 startVelocity: 42,
@@ -78,7 +100,18 @@ export function MilestoneCelebration() {
     return () => {
       cancelled = true;
       for (const t of timers) clearTimeout(t);
-      timers = [];
+      timers.length = 0;
+      try {
+        resetFn?.();
+      } catch {
+        /* ignore */
+      }
+      if (canvas && canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas);
+      }
+      canvas = null;
+      confettiInstance = null;
+      resetFn = null;
     };
   }, [request]);
 
@@ -148,11 +181,11 @@ function titleFor(kind: CelebrationKind | null): string {
 function descriptionFor(kind: CelebrationKind | null): string {
   switch (kind) {
     case 25:
-      return "You're making beautiful progress. Keep going.";
+      return "You're making wonderful progress. Keep going.";
     case 50:
       return "You've completed half your journey. Keep going.";
     case 75:
-      return "You're closer than ever. Keep going toward your goal.";
+      return "You're very close to your goal. Keep going toward your intention.";
     case "completed":
       return "You completed your intention.";
     default:

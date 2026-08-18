@@ -31,6 +31,7 @@ const entriesState: {
 } = { current: [] };
 const setStateBumper: { current: (() => void) | null } = { current: null };
 
+const addEntryMock = vi.fn();
 vi.mock("@/components/data/data-context", () => ({
   useData: () => {
     const [, force] = React.useReducer((x: number) => x + 1, 0);
@@ -41,7 +42,7 @@ vi.mock("@/components/data/data-context", () => ({
       loading: false,
       sync: "idle" as const,
       pendingCount: 0,
-      addEntry: vi.fn(async () => ({ id: "e1" })),
+      addEntry: addEntryMock,
       deleteEntry: vi.fn(async () => undefined),
       createTracker: vi.fn(),
       updateTracker: vi.fn(),
@@ -119,6 +120,12 @@ function Harness({ open }: { open: boolean }) {
 beforeEach(() => {
   trackersState.current = [{ id: "t1", name: "Durood Shareef", status: "active" }];
   entriesState.current = [];
+  addEntryMock.mockReset();
+  addEntryMock.mockResolvedValue({
+    entry: { id: "server-id" },
+    newMilestones: [],
+    completed: false,
+  });
 });
 
 afterEach(() => {
@@ -160,5 +167,52 @@ describe("AddProgressSheet — draft state survives data refreshes", () => {
     const input = getByLabelText("Amount") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "1a2b3c" } });
     expect(input.value).toBe("123");
+  });
+});
+
+describe("AddProgressSheet — stable submission UUID (P0 idempotency)", () => {
+  it("retrying the same failed submit reuses the same clientId", async () => {
+    // First submit rejects (network-ish); second submit succeeds.
+    addEntryMock
+      .mockRejectedValueOnce(new Error("Network flap"))
+      .mockResolvedValueOnce({
+        entry: { id: "server-id" },
+        newMilestones: [],
+        completed: false,
+      });
+
+    const { getByLabelText, getByText, findByText } = render(<Harness open />);
+    const input = getByLabelText("Amount") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "1000" } });
+
+    fireEvent.click(getByText("Add 1,000"));
+    await findByText("Add 1,000"); // button is back after failure
+    fireEvent.click(getByText("Add 1,000"));
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(addEntryMock).toHaveBeenCalledTimes(2);
+    const firstId = addEntryMock.mock.calls[0][0].clientId;
+    const secondId = addEntryMock.mock.calls[1][0].clientId;
+    expect(firstId).toBeTruthy();
+    expect(secondId).toBe(firstId);
+  });
+
+  it("rapid double-tap while pending is prevented", async () => {
+    let resolveIt: (v: unknown) => void = () => undefined;
+    addEntryMock.mockImplementationOnce(
+      () => new Promise((res) => (resolveIt = res)),
+    );
+
+    const { getByLabelText, getByText } = render(<Harness open />);
+    fireEvent.change(getByLabelText("Amount"), { target: { value: "1000" } });
+    fireEvent.click(getByText("Add 1,000"));
+    // Second and third clicks while the button is in pending mode.
+    const pendingBtn = getByText("Adding…");
+    fireEvent.click(pendingBtn);
+    fireEvent.click(pendingBtn);
+
+    resolveIt({ entry: { id: "server-id" }, newMilestones: [], completed: false });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(addEntryMock).toHaveBeenCalledTimes(1);
   });
 });

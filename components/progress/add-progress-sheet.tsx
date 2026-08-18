@@ -50,7 +50,18 @@ export function AddProgressSheet({
   initialTrackerIdRef.current = initialTrackerId;
   activeRef.current = active;
 
-  // Reset the draft only when the sheet transitions closed → open.
+  // ---------------------------------------------------------------------
+  // Stable submission UUID (P0 idempotency)
+  //
+  // One UUID per open cycle. Every submit — and every retry after a failed
+  // submit — reuses this ID. The server-side ON CONFLICT (id) DO NOTHING
+  // guarantees exactly one logical entry even if the request is sent twice
+  // or a first request reached Postgres but the response was lost.
+  //
+  // The ID rotates on the NEXT open cycle (fresh draft, fresh operation).
+  // ---------------------------------------------------------------------
+  const submissionIdRef = React.useRef<string | null>(null);
+
   const wasOpenRef = React.useRef(false);
   React.useEffect(() => {
     const wasOpen = wasOpenRef.current;
@@ -61,6 +72,7 @@ export function AddProgressSheet({
     setDateKey(todayKey());
     setTrackerId(initialTrackerIdRef.current ?? activeRef.current[0]?.id);
     setSubmitting(false);
+    submissionIdRef.current = mintUuid();
   }, [open]);
 
   const selected = trackers.find((t) => t.id === trackerId);
@@ -76,8 +88,13 @@ export function AddProgressSheet({
     setSubmitting(true);
     // Snapshot: a mid-flight data refresh cannot affect these values.
     const draft = { amount: numeric, entryDate: dateKey, note: note.trim() || undefined };
+    // Reuse the same UUID across retries so a retried request never creates
+    // a duplicate row. Guaranteed to be non-null: we mint it on open.
+    const submissionId = submissionIdRef.current ?? mintUuid();
+    submissionIdRef.current = submissionId;
     try {
       const result = await addEntry({
+        clientId: submissionId,
         trackerId: selected.id,
         amount: draft.amount,
         entryDate: draft.entryDate,
@@ -121,7 +138,10 @@ export function AddProgressSheet({
         }}
       >
         <SheetHeader>
-          <SheetTitle>{selected ? `Add to ${selected.name}` : "Add progress"}</SheetTitle>
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            Add progress
+          </p>
+          <SheetTitle className="text-xl">{selected ? selected.name : "Add progress"}</SheetTitle>
           <SheetDescription>How much did you complete?</SheetDescription>
         </SheetHeader>
 
@@ -140,7 +160,7 @@ export function AddProgressSheet({
           />
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Input
               ref={inputRef}
@@ -149,7 +169,7 @@ export function AddProgressSheet({
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="0"
-              className="h-20 rounded-3xl text-center text-5xl font-semibold tabular-nums"
+              className="h-24 rounded-3xl text-center text-5xl font-semibold tabular-nums"
               aria-label="Amount"
               disabled={submitting}
             />
@@ -254,7 +274,12 @@ const QuickAmountRow = React.memo(function QuickAmountRow({
           type="button"
           disabled={disabled}
           onClick={() => onAdd(q)}
-          className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          className={[
+            "h-9 min-w-[64px] rounded-full border border-border/60 bg-muted/40 px-3 text-sm font-medium text-foreground",
+            "transition-colors hover:bg-muted active:scale-[0.97]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "disabled:opacity-50",
+          ].join(" ")}
         >
           +{formatNumber(q)}
         </button>
@@ -262,3 +287,9 @@ const QuickAmountRow = React.memo(function QuickAmountRow({
     </div>
   );
 });
+
+function mintUuid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+

@@ -32,12 +32,14 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="px-1">
         <h1 className="text-2xl font-semibold tracking-tight">History</h1>
-        <p className="text-sm text-muted-foreground">Everything you've recorded, day by day.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Everything you&apos;ve recorded, day by day.
+        </p>
       </header>
 
-      <div className="flex items-center gap-1 rounded-full border border-border/50 bg-muted/30 p-1 text-xs">
+      <div className="flex items-center gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1 text-xs">
         {(
           [
             ["timeline", "Timeline"],
@@ -49,8 +51,11 @@ export default function HistoryPage() {
             type="button"
             onClick={() => setView(id)}
             className={cn(
-              "flex-1 rounded-full px-3 py-1.5 transition-colors",
-              view === id ? "bg-background text-foreground shadow" : "text-muted-foreground",
+              "flex-1 rounded-full px-3 py-1.5 font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              view === id
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground/80",
             )}
           >
             {label}
@@ -59,7 +64,10 @@ export default function HistoryPage() {
       </div>
 
       {trackers.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div
+          className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          aria-label="Filter by goal"
+        >
           <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
             All goals
           </FilterChip>
@@ -84,13 +92,13 @@ export default function HistoryPage() {
         <div className="space-y-5">
           {groups.map((g) => (
             <section key={g.key}>
-              <div className="mb-2 flex items-baseline justify-between px-1">
+              <div className="mb-1.5 flex items-baseline justify-between px-1">
                 <h2 className="text-sm font-medium">{formatRelativeDate(g.key)}</h2>
                 <p className="text-xs tabular-nums text-muted-foreground">
                   +{formatNumber(g.total)}
                 </p>
               </div>
-              <div className="rounded-3xl border border-border/60 bg-card p-2">
+              <div className="divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
                 {g.entries.map((e) => (
                   <EntryItem key={e.id} entry={e} tracker={trackerMap.get(e.trackerId)} />
                 ))}
@@ -115,11 +123,13 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+      className={cn(
+        "shrink-0 snap-start rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-foreground/30 bg-foreground text-background"
-          : "border-border/60 text-muted-foreground hover:bg-muted/40"
-      }`}
+          ? "border-foreground/20 bg-foreground text-background shadow-sm"
+          : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/40",
+      )}
     >
       {children}
     </button>

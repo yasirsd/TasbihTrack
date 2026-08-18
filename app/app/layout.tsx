@@ -59,7 +59,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="app-shell">
           <SideRail onAdd={() => setAddOpen(true)} />
           <div className="lg:pl-72">
-            <main className="mx-auto max-w-3xl px-5 pb-32 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:px-8 lg:pb-16 lg:pt-8">
+            <main className="mx-auto w-full max-w-3xl px-5 pb-32 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:px-10 lg:pb-16 lg:pt-8 xl:max-w-4xl">
               {children}
             </main>
           </div>

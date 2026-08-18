@@ -21,7 +21,6 @@ export default function WelcomePage() {
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col justify-between px-6 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] lg:grid lg:grid-cols-2 lg:items-center lg:gap-16">
         <header className="lg:col-span-2 lg:mb-8 flex items-center justify-between">
           <Wordmark />
-          <span className="text-xs text-muted-foreground">Phase 1 · local</span>
         </header>
 
         <div className="flex flex-col justify-center gap-6 py-8">

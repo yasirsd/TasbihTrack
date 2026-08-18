@@ -105,9 +105,9 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="px-1">
         <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-sm text-muted-foreground">Settings and account.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Settings and account.</p>
       </header>
 
       <Section title="Account">
@@ -219,16 +219,20 @@ export default function ProfilePage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-3xl border border-border/60 bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
-      <div className="space-y-3">{children}</div>
+    <section>
+      <h2 className="mb-2 px-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </h2>
+      <div className="space-y-3 rounded-3xl border border-border/60 bg-card p-4">
+        {children}
+      </div>
     </section>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
+    <div className="flex items-center justify-between px-1 py-1">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium">{value}</span>
     </div>

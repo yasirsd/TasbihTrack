@@ -64,13 +64,19 @@ export function AuthForm() {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="w-full max-w-md space-y-5"
     >
-      <div className="flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 p-1 text-sm">
+      <div
+        role="tablist"
+        aria-label="Auth mode"
+        className="flex items-center gap-0.5 rounded-full border border-border/50 bg-muted/40 p-1 text-sm"
+      >
         <button
           type="button"
-          className={`flex-1 rounded-full px-3 py-1.5 transition-colors ${
+          role="tab"
+          aria-selected={mode === "signIn"}
+          className={`flex-1 rounded-full px-3 py-1.5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             mode === "signIn"
-              ? "bg-background text-foreground shadow"
-              : "text-muted-foreground"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground/80"
           }`}
           onClick={() => setMode("signIn")}
         >
@@ -78,10 +84,12 @@ export function AuthForm() {
         </button>
         <button
           type="button"
-          className={`flex-1 rounded-full px-3 py-1.5 transition-colors ${
+          role="tab"
+          aria-selected={mode === "signUp"}
+          className={`flex-1 rounded-full px-3 py-1.5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             mode === "signUp"
-              ? "bg-background text-foreground shadow"
-              : "text-muted-foreground"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground/80"
           }`}
           onClick={() => setMode("signUp")}
         >

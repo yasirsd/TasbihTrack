@@ -36,12 +36,12 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="px-1">
         <h1 className="text-2xl font-semibold tracking-tight">Insights</h1>
-        <p className="text-sm text-muted-foreground">Your journey, at a glance.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Your journey, at a glance.</p>
       </header>
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-3 divide-x divide-border/40 rounded-3xl border border-border/60 bg-card">
         <Stat label="Today" value={formatNumber(todayTotal)} />
         <Stat label="Last 7 days" value={formatNumber(weekTotal)} />
         <Stat label="All time" value={formatCompact(allTime)} />
@@ -185,8 +185,10 @@ export default function InsightsPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-4">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    <div className="px-4 py-3.5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
     </div>
   );
