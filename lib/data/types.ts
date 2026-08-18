@@ -1,8 +1,10 @@
-export type TrackerStatus = "active" | "completed" | "archived";
+export type TrackerStatus = "active" | "paused" | "completed" | "archived";
 
 export interface UserPreferences {
   theme?: "system" | "light" | "dark";
+  showStreaks?: boolean;
   onboardedAt?: string;
+  localMigrationCompletedAt?: string;
 }
 
 export interface StoredUser {
@@ -32,12 +34,15 @@ export interface Tracker {
   arabicText?: string;
   description?: string;
   targetCount: number;
+  dailyTarget?: number;
   targetDate?: string;
   status: TrackerStatus;
+  isPinned: boolean;
   sortOrder: number;
+  startedAt: string;
+  completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  completedAt?: string;
 }
 
 export interface ProgressEntry {
@@ -56,7 +61,9 @@ export interface CreateTrackerInput {
   arabicText?: string;
   description?: string;
   targetCount: number;
+  dailyTarget?: number;
   targetDate?: string;
+  startingProgress?: number;
 }
 
 export interface UpdateTrackerInput {
@@ -64,9 +71,11 @@ export interface UpdateTrackerInput {
   arabicText?: string;
   description?: string;
   targetCount?: number;
+  dailyTarget?: number | null;
   targetDate?: string | null;
   status?: TrackerStatus;
   sortOrder?: number;
+  isPinned?: boolean;
 }
 
 export interface CreateEntryInput {

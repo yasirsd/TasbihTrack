@@ -9,9 +9,7 @@ import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { todayKey, formatLongDate, toLocalDateKey } from "@/lib/date-utils";
 import { formatNumber } from "@/lib/format";
-import type { Tracker } from "@/lib/data/types";
-
-const QUICK_AMOUNTS = [33, 100, 500, 1000];
+import { smartQuickAmounts } from "@/lib/calculations/pace";
 
 export function AddProgressSheet({
   open,
@@ -22,7 +20,7 @@ export function AddProgressSheet({
   onOpenChange: (open: boolean) => void;
   initialTrackerId?: string;
 }) {
-  const { trackers, addEntry, deleteEntry } = useData();
+  const { trackers, entries, addEntry, deleteEntry } = useData();
   const { toast } = useToast();
   const active = trackers.filter((t) => t.status === "active" || t.status === "completed");
   const [trackerId, setTrackerId] = React.useState<string | undefined>(
@@ -46,6 +44,13 @@ export function AddProgressSheet({
 
   const selected = trackers.find((t) => t.id === trackerId);
   const numeric = Number(amount);
+  const quickAmounts = React.useMemo(
+    () =>
+      smartQuickAmounts(
+        selected ? entries.filter((e) => e.trackerId === selected.id) : [],
+      ),
+    [entries, selected],
+  );
 
   async function submit() {
     if (!selected || !Number.isFinite(numeric) || numeric <= 0) return;
@@ -121,7 +126,7 @@ export function AddProgressSheet({
               aria-label="Amount"
             />
             <div className="mt-3 flex flex-wrap justify-center gap-2">
-              {QUICK_AMOUNTS.map((q) => (
+              {quickAmounts.map((q) => (
                 <button
                   key={q}
                   type="button"

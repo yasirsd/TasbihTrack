@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { getAuthService } from "@/lib/auth/local-auth-service";
+import { CloudAuthService } from "@/lib/auth/cloud-auth-service";
 import type { AuthService, AuthSession } from "@/lib/auth/types";
 
 interface AuthContextValue {
@@ -13,7 +13,7 @@ interface AuthContextValue {
 const AuthContext = React.createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [service] = React.useState(() => getAuthService());
+  const [service] = React.useState<AuthService>(() => new CloudAuthService());
   const [session, setSession] = React.useState<AuthSession | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [nonce, setNonce] = React.useState(0);
@@ -29,9 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => {
         if (mounted) setLoading(false);
       });
-    const unsub = service.onChange((s) => {
-      setSession(s);
-    });
+    const unsub = service.onChange((s) => setSession(s));
     return () => {
       mounted = false;
       unsub();

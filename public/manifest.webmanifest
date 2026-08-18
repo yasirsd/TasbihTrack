@@ -9,6 +9,20 @@
   "background_color": "#09090B",
   "theme_color": "#09090B",
   "categories": ["lifestyle", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Open Dashboard",
+      "short_name": "Home",
+      "url": "/app/dashboard",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Add Progress",
+      "short_name": "Add",
+      "url": "/app/dashboard?add=1",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon.svg",

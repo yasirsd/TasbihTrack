@@ -83,3 +83,7 @@ export function formatShortDay(key: string): string {
   const d = parseDateKey(key);
   return d.toLocaleDateString(undefined, { weekday: "short" });
 }
+
+export function shiftDayKey(key: string, delta: number): string {
+  return toLocalDateKey(addDays(parseDateKey(key), delta));
+}

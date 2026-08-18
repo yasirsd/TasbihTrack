@@ -9,6 +9,8 @@ import { AddProgressSheet } from "@/components/progress/add-progress-sheet";
 import { CreateTrackerSheet } from "@/components/trackers/create-tracker-sheet";
 import { AddSheetContext, useAddSheet } from "@/components/navigation/add-sheet-context";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
+import { ImportLocalDialog } from "@/components/migration/import-local-dialog";
+import { SyncIndicator } from "@/components/pwa/sync-indicator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
@@ -20,6 +22,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!loading && !session) router.replace("/");
   }, [loading, session, router]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !session) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("add") === "1") setAddOpen(true);
+  }, [session]);
 
   if (loading || !session) {
     return (
@@ -52,6 +60,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <BottomNav onAdd={() => setAddOpen(true)} />
           <OfflineIndicator />
+          <SyncIndicator />
+          <ImportLocalDialog />
           <AddProgressSheet
             open={addOpen}
             onOpenChange={setAddOpen}

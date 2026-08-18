@@ -2,17 +2,20 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { useData } from "@/components/data/data-context";
+import { useAuth } from "@/components/auth/auth-context";
 import {
   bestActivityDay,
   computeTrackerStats,
   last7DayPoints,
   mostActiveTracker,
 } from "@/lib/calculations/progress";
+import { currentStreakDays, weeklyComparison } from "@/lib/calculations/pace";
 import { formatCompact, formatNumber, formatPercent } from "@/lib/format";
 import { formatShortDay, formatRelativeDate, todayKey } from "@/lib/date-utils";
 
 export default function InsightsPage() {
   const { entries, trackers } = useData();
+  const { session } = useAuth();
   const today = todayKey();
   const todayTotal = entries
     .filter((e) => e.entryDate === today)
@@ -21,9 +24,15 @@ export default function InsightsPage() {
   const weekTotal = points.reduce((a, b) => a + b.amount, 0);
   const allTime = entries.reduce((a, b) => a + b.amount, 0);
   const peak = points.reduce((max, p) => Math.max(max, p.amount), 0);
-  const activeTrackers = trackers.filter((t) => t.status !== "archived");
+  const activeTrackers = trackers.filter(
+    (t) => t.status !== "archived",
+  );
   const bestGoal = mostActiveTracker(activeTrackers, entries);
   const bestDay = bestActivityDay(entries);
+  const weekly = weeklyComparison(entries);
+  const showStreaks =
+    (session?.user.preferences as { showStreaks?: boolean } | undefined)?.showStreaks ?? false;
+  const streak = showStreaks ? currentStreakDays(entries) : 0;
 
   return (
     <div className="space-y-6">
@@ -80,6 +89,30 @@ export default function InsightsPage() {
         </div>
       </section>
 
+      <section className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-border/60 bg-card p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">This week vs last</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums">
+            {formatNumber(weekly.thisWeek)} <span className="text-sm text-muted-foreground">vs {formatNumber(weekly.lastWeek)}</span>
+          </p>
+          {weekly.diffPercent !== null && (
+            <p className={`text-xs ${weekly.diffPercent >= 0 ? "text-emerald-500" : "text-crimson"}`}>
+              {weekly.diffPercent >= 0 ? "+" : ""}
+              {weekly.diffPercent.toFixed(0)}% {weekly.diffPercent >= 0 ? "more" : "less"} than last week
+            </p>
+          )}
+        </div>
+        {showStreaks && (
+          <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Current streak</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {streak} {streak === 1 ? "day" : "days"}
+            </p>
+            <p className="text-xs text-muted-foreground">Consecutive days with any progress.</p>
+          </div>
+        )}
+      </section>
+
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Goal Progress
@@ -101,7 +134,9 @@ export default function InsightsPage() {
                         {formatNumber(s.total)} / {formatNumber(t.targetCount)}
                       </p>
                     </div>
-                    <p className="text-sm font-semibold">{formatPercent(s.percent, s.percent < 10 ? 1 : 0)}</p>
+                    <p className="text-sm font-semibold">
+                      {formatPercent(s.percent, s.percent < 10 ? 1 : 0)}
+                    </p>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
@@ -132,7 +167,7 @@ export default function InsightsPage() {
           {bestDay && (
             <div className="rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Best activity day
+                Personal best
               </p>
               <p className="mt-1 text-base font-medium">
                 {formatRelativeDate(bestDay.key)}

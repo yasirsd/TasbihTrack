@@ -2,16 +2,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Download, LogOut, Moon, Repeat, Shield, Sun, Trash2, Upload } from "lucide-react";
+import { Download, LogOut, Moon, Shield, Sun, Trash2, Upload } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InstallButton } from "@/components/pwa/install-button";
 import { useToast } from "@/components/ui/toast";
-import { backupFilename, downloadJson, exportBackup, parseBackup, restoreBackup, summarizeBackup } from "@/lib/backup/backup";
 import { useData } from "@/components/data/data-context";
-import type { Backup } from "@/lib/backup/schema";
+import { exportBackupAction, importBackupAction, type CloudBackupPayload } from "@/lib/server/actions/backup-actions";
 import {
   Dialog,
   DialogContent,
@@ -21,26 +20,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+function downloadJson(name: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function ProfilePage() {
-  const { session, service, refresh } = useAuth();
+  const { session, service } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { reload } = useData();
   const { theme, setTheme } = useTheme();
-  const [accounts, setAccounts] = React.useState<{ id: string; username: string; createdAt: string }[]>([]);
   const [showChangePw, setShowChangePw] = React.useState(false);
-  const [showSwitch, setShowSwitch] = React.useState(false);
   const [showDelete, setShowDelete] = React.useState(false);
-  const [pendingBackup, setPendingBackup] = React.useState<Backup | null>(null);
+  const [pendingBackup, setPendingBackup] = React.useState<
+    (CloudBackupPayload & { user?: { username: string } }) | null
+  >(null);
   const [persistent, setPersistent] = React.useState<boolean | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    void service.listAccounts().then(setAccounts);
     if (typeof navigator !== "undefined" && "storage" in navigator && "persisted" in navigator.storage) {
       void navigator.storage.persisted().then(setPersistent);
     }
-  }, [service]);
+  }, []);
+
+  const showStreaks =
+    (session?.user.preferences as { showStreaks?: boolean } | undefined)?.showStreaks ?? false;
 
   async function requestPersist() {
     if (!("storage" in navigator) || !("persist" in navigator.storage)) return;
@@ -51,8 +64,9 @@ export default function ProfilePage() {
 
   async function handleExport() {
     if (!session) return;
-    const backup = await exportBackup(session.user.id);
-    downloadJson(backupFilename(session.user.username), backup);
+    const payload = await exportBackupAction();
+    const name = `tasbihtrack-${session.user.username}-${new Date().toISOString().slice(0, 10)}.json`;
+    downloadJson(name, payload);
     toast({ title: "Backup exported", tone: "success" });
   }
 
@@ -60,28 +74,32 @@ export default function ProfilePage() {
     try {
       const text = await file.text();
       const raw = JSON.parse(text);
-      const result = parseBackup(raw);
-      if (!result.ok) {
-        toast({ title: "Invalid backup", description: result.message, tone: "destructive" });
-        return;
-      }
-      setPendingBackup(result.backup);
+      setPendingBackup(raw);
     } catch {
       toast({ title: "Couldn't read file", tone: "destructive" });
     }
   }
 
   async function confirmRestore() {
-    if (!pendingBackup || !session) return;
-    await restoreBackup(pendingBackup, { targetUserId: session.user.id });
-    await reload();
-    toast({ title: "Backup restored", tone: "success" });
-    setPendingBackup(null);
+    if (!pendingBackup) return;
+    try {
+      await importBackupAction(pendingBackup);
+      await reload();
+      toast({ title: "Backup restored", tone: "success" });
+    } catch (e) {
+      toast({ title: "Invalid backup", description: (e as Error).message, tone: "destructive" });
+    } finally {
+      setPendingBackup(null);
+    }
   }
 
   async function handleSignOut() {
     await service.signOut();
     router.replace("/");
+  }
+
+  async function toggleStreaks(next: boolean) {
+    await service.updatePreferences({ showStreaks: next });
   }
 
   return (
@@ -93,14 +111,9 @@ export default function ProfilePage() {
 
       <Section title="Account">
         <Row label="Username" value={session?.user.username ?? ""} />
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button variant="outline" onClick={() => setShowChangePw(true)}>
-            <Shield className="h-4 w-4" /> Change password
-          </Button>
-          <Button variant="outline" onClick={() => setShowSwitch(true)}>
-            <Repeat className="h-4 w-4" /> Switch account
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => setShowChangePw(true)}>
+          <Shield className="h-4 w-4" /> Change password
+        </Button>
         <Button variant="ghost" onClick={handleSignOut} className="text-crimson">
           <LogOut className="h-4 w-4" /> Sign out
         </Button>
@@ -120,15 +133,31 @@ export default function ProfilePage() {
         </div>
       </Section>
 
+      <Section title="Insights">
+        <label className="flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3 text-sm">
+          <span>
+            Show streaks
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Consecutive days with progress.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={showStreaks}
+            onChange={(e) => toggleStreaks(e.target.checked)}
+            className="h-5 w-5 accent-crimson"
+          />
+        </label>
+      </Section>
+
       <Section title="App">
         <InstallButton />
-        <p className="text-xs text-muted-foreground">App version 0.1.0 — Phase 1 (local storage)</p>
+        <p className="text-xs text-muted-foreground">
+          Cloud sync is on. Your data is stored securely and synchronized across your devices.
+        </p>
       </Section>
 
       <Section title="Data">
-        <p className="text-sm text-muted-foreground">
-          Your data is currently saved on this device only. Cloud sync arrives in Phase 2.
-        </p>
         <div className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4" /> Export backup
@@ -151,8 +180,8 @@ export default function ProfilePage() {
         {persistent !== null && (
           <div className="rounded-2xl border border-border/50 bg-muted/30 p-3 text-xs text-muted-foreground">
             {persistent
-              ? "Persistent storage: On — your browser has agreed to keep this data."
-              : "Persistent storage isn't guaranteed yet."}
+              ? "This device is allowed to keep an offline cache."
+              : "This device may evict its offline cache."}
             {!persistent && (
               <button
                 onClick={requestPersist}
@@ -167,20 +196,11 @@ export default function ProfilePage() {
 
       <Section title="Account Management">
         <Button variant="outline" className="text-crimson" onClick={() => setShowDelete(true)}>
-          <Trash2 className="h-4 w-4" /> Delete Local Account
+          <Trash2 className="h-4 w-4" /> Delete Account
         </Button>
       </Section>
 
       <ChangePasswordDialog open={showChangePw} onOpenChange={setShowChangePw} />
-      <SwitchAccountDialog
-        open={showSwitch}
-        onOpenChange={setShowSwitch}
-        accounts={accounts}
-        onSwitched={() => {
-          refresh();
-          router.replace("/app/dashboard");
-        }}
-      />
       <DeleteAccountDialog
         open={showDelete}
         onOpenChange={setShowDelete}
@@ -264,7 +284,11 @@ function ChangePasswordDialog({
     const res = await service.changePassword(current, next);
     setSubmitting(false);
     if (!res.ok) return setError(res.message);
-    toast({ title: "Password updated", tone: "success" });
+    toast({
+      title: "Password updated",
+      description: "Other devices signed out for security.",
+      tone: "success",
+    });
     onOpenChange(false);
   }
 
@@ -273,6 +297,7 @@ function ChangePasswordDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change password</DialogTitle>
+          <DialogDescription>Other devices will be signed out.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid gap-2">
@@ -295,96 +320,6 @@ function ChangePasswordDialog({
           </Button>
           <Button variant="crimson" onClick={submit} disabled={submitting}>
             Update password
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function SwitchAccountDialog({
-  open,
-  onOpenChange,
-  accounts,
-  onSwitched,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  accounts: { id: string; username: string; createdAt: string }[];
-  onSwitched: () => void;
-}) {
-  const { service } = useAuth();
-  const { toast } = useToast();
-  const [username, setUsername] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
-  const [submitting, setSubmitting] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!open) {
-      setUsername("");
-      setPassword("");
-      setError(null);
-    }
-  }, [open]);
-
-  async function submit() {
-    setSubmitting(true);
-    setError(null);
-    const res = await service.switchAccount(username, password);
-    setSubmitting(false);
-    if (!res.ok) return setError(res.message);
-    toast({ title: `Signed in as ${res.session.user.username}`, tone: "success" });
-    onOpenChange(false);
-    onSwitched();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Switch account</DialogTitle>
-          <DialogDescription>Sign in to another local account.</DialogDescription>
-        </DialogHeader>
-        {accounts.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {accounts.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setUsername(a.username)}
-                className="rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs hover:bg-muted/60"
-              >
-                {a.username}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="space-y-3">
-          <div className="grid gap-2">
-            <Label>Username</Label>
-            <Input
-              autoCapitalize="none"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          {error && (
-            <p className="rounded-xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson">
-              {error}
-            </p>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button variant="crimson" onClick={submit} disabled={submitting}>
-            Sign in
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -429,9 +364,9 @@ function DeleteAccountDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete this local account?</DialogTitle>
+          <DialogTitle>Delete this account?</DialogTitle>
           <DialogDescription>
-            This permanently removes your account and all its progress from this device.
+            This permanently removes your account and all its progress.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
@@ -461,34 +396,30 @@ function RestoreDialog({
   onCancel,
   onConfirm,
 }: {
-  backup: Backup | null;
+  backup: (CloudBackupPayload & { user?: { username: string } }) | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const [summary, setSummary] = React.useState<Awaited<ReturnType<typeof summarizeBackup>> | null>(null);
-  React.useEffect(() => {
-    if (backup) void summarizeBackup(backup).then(setSummary);
-    else setSummary(null);
-  }, [backup]);
-
   return (
     <Dialog open={!!backup} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Restore backup?</DialogTitle>
           <DialogDescription>
-            Restoring will replace the trackers and entries for your current account.
+            Restoring will replace the trackers and entries on your account.
           </DialogDescription>
         </DialogHeader>
-        {summary && (
+        {backup && (
           <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm">
-            <p className="font-medium">TasbihTrack Backup — {summary.username}</p>
+            <p className="font-medium">TasbihTrack Backup{backup.user ? ` — ${backup.user.username}` : ""}</p>
             <p className="text-muted-foreground">
-              {summary.trackerCount} goals · {summary.entryCount} entries
+              {backup.trackers?.length ?? 0} goals · {backup.entries?.length ?? 0} entries
             </p>
-            <p className="text-xs text-muted-foreground">
-              Exported {new Date(summary.exportedAt).toLocaleString()}
-            </p>
+            {backup.exportedAt && (
+              <p className="text-xs text-muted-foreground">
+                Exported {new Date(backup.exportedAt).toLocaleString()}
+              </p>
+            )}
           </div>
         )}
         <DialogFooter>

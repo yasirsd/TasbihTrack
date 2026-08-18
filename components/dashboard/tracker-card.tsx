@@ -1,10 +1,11 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, MoreHorizontal, Plus } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Pause, Pin, PinOff, Play, Plus } from "lucide-react";
 import { motion } from "motion/react";
 import type { Tracker, ProgressEntry } from "@/lib/data/types";
 import { computeTrackerStats } from "@/lib/calculations/progress";
+import { computePace } from "@/lib/calculations/pace";
 import { formatNumber, formatPercent, formatSigned } from "@/lib/format";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function TrackerCard({
   onEdit: (t: Tracker) => void;
 }) {
   const stats = computeTrackerStats(tracker, entries);
+  const pace = computePace(tracker, entries);
   const { deleteTracker, updateTracker } = useData();
   const { toast } = useToast();
 
@@ -39,15 +41,9 @@ export function TrackerCard({
     toast({ title: "Goal deleted" });
   }
 
-  async function handleArchive() {
-    await updateTracker(tracker.id, { status: "archived" });
-    toast({ title: "Goal archived" });
-  }
-
-  async function handleRestore() {
-    await updateTracker(tracker.id, { status: "active" });
-    toast({ title: "Goal restored" });
-  }
+  const paused = tracker.status === "paused";
+  const completed = tracker.status === "completed";
+  const paceLabel = paceLabelFor(pace);
 
   return (
     <motion.article
@@ -58,13 +54,26 @@ export function TrackerCard({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-crimson/5 to-transparent" />
       <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <Link
-            href={`/app/tracker/${tracker.id}`}
-            className="text-base font-semibold tracking-tight text-foreground hover:underline"
-          >
-            {tracker.name}
-          </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/app/tracker/${tracker.id}`}
+              className="truncate text-base font-semibold tracking-tight text-foreground hover:underline"
+            >
+              {tracker.name}
+            </Link>
+            {tracker.isPinned && <Pin className="h-3.5 w-3.5 text-gold" aria-label="Pinned" />}
+            {paused && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Paused
+              </span>
+            )}
+            {completed && (
+              <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium text-gold-deep">
+                Completed
+              </span>
+            )}
+          </div>
           {tracker.arabicText && (
             <p dir="rtl" className="mt-1 text-lg text-muted-foreground/90">
               {tracker.arabicText}
@@ -82,10 +91,58 @@ export function TrackerCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => onEdit(tracker)}>Edit</DropdownMenuItem>
-            {tracker.status === "archived" ? (
-              <DropdownMenuItem onSelect={handleRestore}>Restore</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={async () => {
+                await updateTracker(tracker.id, { isPinned: !tracker.isPinned });
+              }}
+            >
+              {tracker.isPinned ? (
+                <>
+                  <PinOff className="h-3.5 w-3.5" /> Unpin
+                </>
+              ) : (
+                <>
+                  <Pin className="h-3.5 w-3.5" /> Pin
+                </>
+              )}
+            </DropdownMenuItem>
+            {paused ? (
+              <DropdownMenuItem
+                onSelect={async () => {
+                  await updateTracker(tracker.id, { status: "active" });
+                  toast({ title: "Resumed" });
+                }}
+              >
+                <Play className="h-3.5 w-3.5" /> Resume
+              </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onSelect={handleArchive}>Archive</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={async () => {
+                  await updateTracker(tracker.id, { status: "paused" });
+                  toast({ title: "Paused" });
+                }}
+              >
+                <Pause className="h-3.5 w-3.5" /> Pause
+              </DropdownMenuItem>
+            )}
+            {tracker.status === "archived" ? (
+              <DropdownMenuItem
+                onSelect={async () => {
+                  await updateTracker(tracker.id, { status: "active" });
+                  toast({ title: "Restored" });
+                }}
+              >
+                Restore
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onSelect={async () => {
+                  await updateTracker(tracker.id, { status: "archived" });
+                  toast({ title: "Archived" });
+                }}
+              >
+                Archive
+              </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={handleDelete}>
@@ -109,13 +166,19 @@ export function TrackerCard({
             {formatNumber(stats.remaining)} remaining
             {stats.today > 0 && <> · <span className="text-foreground">{formatSigned(stats.today)} today</span></>}
           </p>
+          {tracker.dailyTarget && !completed && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Today {formatNumber(stats.today)} / {formatNumber(tracker.dailyTarget)}
+              {stats.today >= tracker.dailyTarget && " ✓"}
+            </p>
+          )}
         </div>
         <div className="text-right">
-          <div className="text-sm font-semibold text-foreground">{formatPercent(stats.percent, stats.percent < 10 ? 1 : 0)}</div>
-          {tracker.status === "completed" && (
-            <div className="mt-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium text-gold-deep">
-              Completed
-            </div>
+          <div className="text-sm font-semibold text-foreground">
+            {formatPercent(stats.percent, stats.percent < 10 ? 1 : 0)}
+          </div>
+          {paceLabel && (
+            <div className={`mt-1 text-[11px] ${paceLabel.className}`}>{paceLabel.text}</div>
           )}
         </div>
       </div>
@@ -141,4 +204,23 @@ export function TrackerCard({
       </div>
     </motion.article>
   );
+}
+
+function paceLabelFor(pace: ReturnType<typeof computePace>): { text: string; className: string } | null {
+  switch (pace.status) {
+    case "on_track":
+      return { text: "On track", className: "text-muted-foreground" };
+    case "ahead":
+      return {
+        text: `${formatNumber(pace.diffFromTarget ?? 0)} ahead`,
+        className: "text-emerald-500",
+      };
+    case "behind":
+      return {
+        text: `${formatNumber(Math.abs(pace.diffFromTarget ?? 0))} behind`,
+        className: "text-crimson",
+      };
+    default:
+      return null;
+  }
 }

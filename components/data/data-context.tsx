@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import { getRepositories } from "@/lib/data/repositories";
+import { cloudRepositories } from "@/lib/data/cloud/cloud-repositories";
+import { readSnapshot, writeSnapshot, clearSnapshot } from "@/lib/cache/local-cache";
 import type {
   CreateEntryInput,
   CreateTrackerInput,
@@ -11,13 +12,17 @@ import type {
 } from "@/lib/data/types";
 import { useAuth } from "@/components/auth/auth-context";
 
+type SyncState = "idle" | "syncing" | "offline" | "error";
+
 interface DataContextValue {
   trackers: Tracker[];
   entries: ProgressEntry[];
   loading: boolean;
+  sync: SyncState;
   createTracker: (input: CreateTrackerInput) => Promise<Tracker>;
   updateTracker: (id: string, patch: UpdateTrackerInput) => Promise<Tracker>;
   deleteTracker: (id: string) => Promise<void>;
+  reorderTrackers: (ids: string[]) => Promise<void>;
   addEntry: (input: CreateEntryInput) => Promise<ProgressEntry>;
   updateEntry: (id: string, patch: UpdateEntryInput) => Promise<ProgressEntry>;
   deleteEntry: (id: string) => Promise<void>;
@@ -28,11 +33,19 @@ const DataContext = React.createContext<DataContextValue | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [trackers, setTrackers] = React.useState<Tracker[]>([]);
   const [entries, setEntries] = React.useState<ProgressEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const repos = React.useMemo(() => getRepositories(), []);
-  const userId = session?.user.id;
+  const [sync, setSync] = React.useState<SyncState>("idle");
+
+  const applySnapshot = React.useCallback(
+    (t: Tracker[], e: ProgressEntry[]) => {
+      setTrackers(t);
+      setEntries(e);
+    },
+    [],
+  );
 
   const reload = React.useCallback(async () => {
     if (!userId) {
@@ -41,107 +54,157 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    const [t, e] = await Promise.all([
-      repos.trackers.listForUser(userId),
-      repos.entries.listForUser(userId),
-    ]);
-    setTrackers(t);
-    setEntries(e);
-    setLoading(false);
-  }, [repos, userId]);
+    setSync("syncing");
+    try {
+      const snap = await cloudRepositories.list();
+      applySnapshot(snap.trackers, snap.entries);
+      await writeSnapshot({
+        userId,
+        trackers: snap.trackers,
+        entries: snap.entries,
+        cachedAt: new Date().toISOString(),
+      });
+      setSync(navigator.onLine ? "idle" : "offline");
+    } catch (err) {
+      console.warn("sync failed", err);
+      setSync(navigator.onLine ? "error" : "offline");
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, applySnapshot]);
 
+  // Initial: read cache first for instant paint, then fetch fresh.
   React.useEffect(() => {
-    void reload();
-  }, [reload]);
+    let cancelled = false;
+    (async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const cached = await readSnapshot(userId);
+      if (!cancelled && cached) {
+        applySnapshot(cached.trackers, cached.entries);
+      }
+      await reload();
+      if (cancelled) return;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reload, applySnapshot]);
+
+  // Refresh on tab focus and network reconnection.
+  React.useEffect(() => {
+    if (!userId) return;
+    const onFocus = () => {
+      if (document.visibilityState === "visible") void reload();
+    };
+    const onOnline = () => {
+      setSync("syncing");
+      void reload();
+    };
+    const onOffline = () => setSync("offline");
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [userId, reload]);
 
   const createTracker = React.useCallback(
     async (input: CreateTrackerInput) => {
-      if (!userId) throw new Error("Not signed in");
-      const t = await repos.trackers.create(userId, input);
-      setTrackers((prev) => [...prev, t].sort((a, b) => a.sortOrder - b.sortOrder));
+      const t = await cloudRepositories.createTracker(input);
+      setTrackers((prev) => [...prev, t]);
+      void reload();
       return t;
     },
-    [repos, userId],
+    [reload],
   );
 
   const updateTracker = React.useCallback(
     async (id: string, patch: UpdateTrackerInput) => {
-      if (!userId) throw new Error("Not signed in");
-      const t = await repos.trackers.update(userId, id, patch);
+      const t = await cloudRepositories.updateTracker(id, patch);
       setTrackers((prev) => prev.map((x) => (x.id === id ? t : x)));
       return t;
     },
-    [repos, userId],
+    [],
   );
 
-  const deleteTracker = React.useCallback(
-    async (id: string) => {
-      if (!userId) throw new Error("Not signed in");
-      await repos.trackers.delete(userId, id);
-      setTrackers((prev) => prev.filter((x) => x.id !== id));
-      setEntries((prev) => prev.filter((x) => x.trackerId !== id));
+  const deleteTracker = React.useCallback(async (id: string) => {
+    await cloudRepositories.deleteTracker(id);
+    setTrackers((prev) => prev.filter((x) => x.id !== id));
+    setEntries((prev) => prev.filter((x) => x.trackerId !== id));
+  }, []);
+
+  const reorderTrackers = React.useCallback(
+    async (ids: string[]) => {
+      await cloudRepositories.reorderTrackers(ids);
+      setTrackers((prev) => {
+        const map = new Map(prev.map((t) => [t.id, t]));
+        return ids
+          .map((id, i) => {
+            const t = map.get(id);
+            return t ? { ...t, sortOrder: i } : null;
+          })
+          .filter((x): x is Tracker => x !== null);
+      });
     },
-    [repos, userId],
+    [],
   );
 
   const addEntry = React.useCallback(
     async (input: CreateEntryInput) => {
-      if (!userId) throw new Error("Not signed in");
-      const e = await repos.entries.create(userId, input);
+      const e = await cloudRepositories.createEntry(input);
       setEntries((prev) => [e, ...prev]);
-      // Auto-mark completed if reached target
-      const tracker = trackers.find((t) => t.id === input.trackerId);
-      if (tracker && tracker.status === "active") {
-        const total =
-          entries.filter((x) => x.trackerId === tracker.id).reduce((a, b) => a + b.amount, 0) + e.amount;
-        if (total >= tracker.targetCount && tracker.targetCount > 0) {
-          const updated = await repos.trackers.update(userId, tracker.id, { status: "completed" });
-          setTrackers((prev) => prev.map((x) => (x.id === tracker.id ? updated : x)));
-        }
-      }
+      // Trigger a background refresh so completion / milestones update.
+      void reload();
       return e;
     },
-    [repos, userId, trackers, entries],
+    [reload],
   );
 
   const updateEntry = React.useCallback(
     async (id: string, patch: UpdateEntryInput) => {
-      if (!userId) throw new Error("Not signed in");
-      const e = await repos.entries.update(userId, id, patch);
+      const e = await cloudRepositories.updateEntry(id, patch);
       setEntries((prev) => prev.map((x) => (x.id === id ? e : x)));
       return e;
     },
-    [repos, userId],
+    [],
   );
 
-  const deleteEntry = React.useCallback(
-    async (id: string) => {
-      if (!userId) throw new Error("Not signed in");
-      await repos.entries.delete(userId, id);
-      setEntries((prev) => prev.filter((x) => x.id !== id));
-    },
-    [repos, userId],
-  );
+  const deleteEntry = React.useCallback(async (id: string) => {
+    await cloudRepositories.deleteEntry(id);
+    setEntries((prev) => prev.filter((x) => x.id !== id));
+  }, []);
 
-  return (
-    <DataContext.Provider
-      value={{
-        trackers,
-        entries,
-        loading,
-        createTracker,
-        updateTracker,
-        deleteTracker,
-        addEntry,
-        updateEntry,
-        deleteEntry,
-        reload,
-      }}
-    >
-      {children}
-    </DataContext.Provider>
-  );
+  // Purge cache on sign-out.
+  React.useEffect(() => {
+    return () => {
+      if (userId) void clearSnapshot(userId).catch(() => undefined);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const value: DataContextValue = {
+    trackers,
+    entries,
+    loading,
+    sync,
+    createTracker,
+    updateTracker,
+    deleteTracker,
+    reorderTrackers,
+    addEntry,
+    updateEntry,
+    deleteEntry,
+    reload,
+  };
+
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
 export function useData(): DataContextValue {

@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
-import { Plus } from "lucide-react";
+import { Archive, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 import { useData } from "@/components/data/data-context";
 import { useAddSheet } from "@/components/navigation/add-sheet-context";
@@ -27,8 +28,12 @@ export default function DashboardPage() {
   const { openAdd, openCreate } = useAddSheet();
   const [editing, setEditing] = React.useState<Tracker | null>(null);
 
-  const active = trackers.filter((t) => t.status !== "archived");
-  const displayed = active;
+  const active = trackers.filter(
+    (t) => t.status === "active" || t.status === "paused",
+  );
+  const completed = trackers.filter((t) => t.status === "completed");
+  const archived = trackers.filter((t) => t.status === "archived");
+  const displayed = [...active, ...completed];
 
   return (
     <div className="space-y-6">
@@ -80,6 +85,23 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {archived.length > 0 && (
+        <section>
+          <Link
+            href="/app/archive"
+            className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-4 hover:bg-muted/30"
+          >
+            <div>
+              <p className="text-sm font-medium">Past Journeys</p>
+              <p className="text-xs text-muted-foreground">
+                {archived.length} archived {archived.length === 1 ? "goal" : "goals"}
+              </p>
+            </div>
+            <Archive className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </section>
+      )}
 
       <EditTrackerSheet
         tracker={editing}

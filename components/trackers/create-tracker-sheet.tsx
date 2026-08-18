@@ -19,9 +19,11 @@ export function CreateTrackerSheet({
   const { toast } = useToast();
   const [name, setName] = React.useState("");
   const [target, setTarget] = React.useState("");
+  const [dailyTarget, setDailyTarget] = React.useState("");
   const [arabic, setArabic] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [date, setDate] = React.useState("");
+  const [startingProgress, setStartingProgress] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -29,9 +31,11 @@ export function CreateTrackerSheet({
     if (open) {
       setName("");
       setTarget("");
+      setDailyTarget("");
       setArabic("");
       setDescription("");
       setDate("");
+      setStartingProgress("");
       setError(null);
     }
   }, [open]);
@@ -42,11 +46,15 @@ export function CreateTrackerSheet({
     const t = Number(target);
     if (!trimmed) return setError("Please give this goal a name.");
     if (!Number.isFinite(t) || t <= 0) return setError("Target must be greater than zero.");
+    const dt = dailyTarget ? Number(dailyTarget) : undefined;
+    const sp = startingProgress ? Number(startingProgress) : undefined;
     setSubmitting(true);
     try {
       await createTracker({
         name: trimmed,
         targetCount: t,
+        dailyTarget: dt && dt > 0 ? dt : undefined,
+        startingProgress: sp && sp > 0 ? sp : undefined,
         arabicText: arabic.trim() || undefined,
         description: description.trim() || undefined,
         targetDate: date || undefined,
@@ -94,6 +102,29 @@ export function CreateTrackerSheet({
               More details (optional)
             </summary>
             <div className="mt-3 grid gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="tdaily">Daily target</Label>
+                <Input
+                  id="tdaily"
+                  inputMode="numeric"
+                  value={dailyTarget}
+                  onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder="e.g. 2000"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="tstarting">Already completed</Label>
+                <Input
+                  id="tstarting"
+                  inputMode="numeric"
+                  value={startingProgress}
+                  onChange={(e) => setStartingProgress(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder="e.g. 23000"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Recorded as your first entry so history stays honest.
+                </p>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="tarabic">Arabic text</Label>
                 <Input

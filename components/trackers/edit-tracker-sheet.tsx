@@ -22,29 +22,47 @@ export function EditTrackerSheet({
   const { toast } = useToast();
   const [name, setName] = React.useState("");
   const [target, setTarget] = React.useState("");
+  const [dailyTarget, setDailyTarget] = React.useState("");
   const [arabic, setArabic] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [date, setDate] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [confirmTargetChange, setConfirmTargetChange] = React.useState(false);
 
   React.useEffect(() => {
     if (!tracker) return;
     setName(tracker.name);
     setTarget(String(tracker.targetCount));
+    setDailyTarget(tracker.dailyTarget ? String(tracker.dailyTarget) : "");
     setArabic(tracker.arabicText ?? "");
     setDescription(tracker.description ?? "");
     setDate(tracker.targetDate ?? "");
+    setConfirmTargetChange(false);
   }, [tracker, open]);
+
+  const targetChanged = tracker && Number(target) !== tracker.targetCount;
+  const dailyChanged =
+    tracker && Number(dailyTarget || 0) !== Number(tracker.dailyTarget ?? 0);
 
   async function submit() {
     if (!tracker) return;
     const t = Number(target);
     if (!name.trim() || !Number.isFinite(t) || t <= 0) return;
+    if (targetChanged && !confirmTargetChange) {
+      setConfirmTargetChange(true);
+      return;
+    }
     setSubmitting(true);
     try {
       await updateTracker(tracker.id, {
         name,
         targetCount: t,
+        dailyTarget:
+          dailyChanged
+            ? dailyTarget
+              ? Number(dailyTarget)
+              : null
+            : undefined,
         arabicText: arabic || undefined,
         description: description || undefined,
         targetDate: date || null,
@@ -77,6 +95,16 @@ export function EditTrackerSheet({
             />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="edaily">Daily target (optional)</Label>
+            <Input
+              id="edaily"
+              inputMode="numeric"
+              value={dailyTarget}
+              onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="—"
+            />
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="earabic">Arabic text</Label>
             <Input
               id="earabic"
@@ -98,6 +126,14 @@ export function EditTrackerSheet({
             <Label htmlFor="edate">Target date</Label>
             <Input id="edate" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
+
+          {confirmTargetChange && targetChanged && tracker && (
+            <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3 text-sm">
+              Changing target from {tracker.targetCount.toLocaleString()} to {Number(target).toLocaleString()}.
+              History and milestones are preserved in the Journey. Tap Save again to confirm.
+            </div>
+          )}
+
           <Button variant="crimson" size="lg" className="w-full" onClick={submit} disabled={submitting}>
             Save changes
           </Button>

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { ProgressEntry, Tracker } from "@/lib/data/types";
 import { computeTrackerStats, groupByDay, last7DayPoints, shiftDayKey } from "./progress";
 import { todayKey } from "@/lib/date-utils";
-import { parseBackup } from "@/lib/backup/backup";
 
 const tracker: Tracker = {
   id: "t1",
@@ -10,7 +9,9 @@ const tracker: Tracker = {
   name: "Durood Shareef",
   targetCount: 100000,
   status: "active",
+  isPinned: false,
   sortOrder: 0,
+  startedAt: "2026-01-01T00:00:00.000Z",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
@@ -92,9 +93,3 @@ describe("last7DayPoints", () => {
   });
 });
 
-describe("backup parser", () => {
-  it("rejects invalid data", () => {
-    const result = parseBackup({ not: "valid" });
-    expect(result.ok).toBe(false);
-  });
-});

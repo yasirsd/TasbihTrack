@@ -1,9 +1,7 @@
 import type { ProgressEntry, Tracker } from "@/lib/data/types";
 import {
-  addDays,
   daysBetween,
   last7DaysKeys,
-  parseDateKey,
   startOfWeek,
   todayKey,
   toLocalDateKey,
@@ -182,6 +180,4 @@ export function isEntryInWeek(entryKey: string): boolean {
   return entryKey >= weekStart && entryKey <= today;
 }
 
-export function shiftDayKey(key: string, delta: number): string {
-  return toLocalDateKey(addDays(parseDateKey(key), delta));
-}
+export { shiftDayKey } from "@/lib/date-utils";
