@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool, types, type PoolClient } from "pg";
 import { env } from "./env";
+import { buildPgConfig } from "./pg-config.mjs";
 
 // bigint columns → JS number (safe up to 2^53 = 9,007,199,254,740,992).
 // Progress amounts and targets easily fit — we validate against 10^15 at the boundary.
@@ -13,7 +14,7 @@ declare global {
 
 function makePool(): Pool {
   return new Pool({
-    connectionString: env.postgresUrl,
+    ...buildPgConfig(env.postgresUrl),
     max: 5,
     idleTimeoutMillis: 30_000,
     keepAlive: true,

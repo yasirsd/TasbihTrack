@@ -4,6 +4,11 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "motion"],
   },
+  // Ensure the Supabase CA certificate is bundled into serverless functions
+  // that touch the database (Server Actions live under /app).
+  outputFileTracingIncludes: {
+    "/**/*": ["./certs/**/*"],
+  },
   async headers() {
     return [
       {
