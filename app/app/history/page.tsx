@@ -8,8 +8,8 @@ import { EntryItem } from "@/components/entries/entry-item";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 
-const CalendarView = dynamic(
-  () => import("@/components/history/calendar-view").then((m) => m.CalendarView),
+const TasbihCalendar = dynamic(
+  () => import("@/components/calendar/tasbih-calendar").then((m) => m.TasbihCalendar),
   { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-2xl bg-muted/30" /> },
 );
 
@@ -72,7 +72,7 @@ export default function HistoryPage() {
       )}
 
       {view === "calendar" ? (
-        <CalendarView trackerId={filter === "all" ? undefined : filter} />
+        <TasbihCalendar trackerId={filter === "all" ? undefined : filter} />
       ) : groups.length === 0 ? (
         <div className="rounded-3xl border border-border/60 bg-card p-8 text-center">
           <p className="text-base font-medium">No progress recorded yet.</p>

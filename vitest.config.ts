@@ -16,6 +16,11 @@ export default defineConfig({
       ["lib/**/*.test.{ts,mts}", "node"],
     ],
     environment: "node",
-    include: ["lib/**/*.test.ts", "lib/**/*.test.mts", "components/**/*.test.tsx"],
+    include: [
+      "lib/**/*.test.ts",
+      "lib/**/*.test.mts",
+      "components/**/*.test.ts",
+      "components/**/*.test.tsx",
+    ],
   },
 });

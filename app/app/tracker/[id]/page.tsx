@@ -24,8 +24,8 @@ const JourneyView = dynamic(
   () => import("@/components/tracker/journey-view").then((m) => m.JourneyView),
   { ssr: false, loading: () => <div className="h-24 animate-pulse rounded-2xl bg-muted/30" /> },
 );
-const CalendarView = dynamic(
-  () => import("@/components/history/calendar-view").then((m) => m.CalendarView),
+const TasbihCalendar = dynamic(
+  () => import("@/components/calendar/tasbih-calendar").then((m) => m.TasbihCalendar),
   { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-2xl bg-muted/30" /> },
 );
 import {
@@ -337,7 +337,7 @@ export default function TrackerDetailPage() {
           )}
 
           {tab === "journey" && <JourneyView tracker={tracker} />}
-          {tab === "calendar" && <CalendarView trackerId={tracker.id} />}
+          {tab === "calendar" && <TasbihCalendar trackerId={tracker.id} />}
         </section>
       )}
 
