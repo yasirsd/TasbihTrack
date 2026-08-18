@@ -47,6 +47,7 @@ export const updateTrackerSchema = z.object({
 });
 
 export const createEntrySchema = z.object({
+  clientId: z.string().uuid().optional(),
   trackerId: z.string().uuid(),
   amount: positiveIntSchema,
   entryDate: dateKeySchema.optional(),

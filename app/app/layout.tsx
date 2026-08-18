@@ -10,6 +10,7 @@ import { CreateTrackerSheet } from "@/components/trackers/create-tracker-sheet";
 import { AddSheetContext, useAddSheet } from "@/components/navigation/add-sheet-context";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { ImportLocalDialog } from "@/components/migration/import-local-dialog";
+import { MigrationProvider } from "@/components/migration/migration-context";
 import { SyncIndicator } from "@/components/pwa/sync-indicator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <DataProvider>
+     <MigrationProvider>
       <AddSheetContext.Provider
         value={{
           openAdd: (id) => {
@@ -70,6 +72,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <CreateTrackerSheet open={createOpen} onOpenChange={setCreateOpen} />
         </div>
       </AddSheetContext.Provider>
+     </MigrationProvider>
     </DataProvider>
   );
 }

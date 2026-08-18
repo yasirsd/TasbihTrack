@@ -2,7 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    optimizePackageImports: ["lucide-react", "motion"],
+    // NOTE: `motion` intentionally omitted. Next 15's optimizePackageImports
+    // barrel-rewrites imports from "motion/react" into deep paths that the
+    // dev webpack chunker occasionally fails to re-emit after HMR, producing
+    // `Cannot find module './vendor-chunks/motion.js'` at runtime. Motion's
+    // own bundle is small enough that this optimization is not worth the
+    // stability cost. `lucide-react` remains — it is well-supported here.
+    optimizePackageImports: ["lucide-react"],
   },
   // Ensure the Supabase CA certificate is bundled into serverless functions
   // that touch the database (Server Actions live under /app).

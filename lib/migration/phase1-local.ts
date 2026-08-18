@@ -13,14 +13,14 @@ interface OldTracker {
   id: string;
   userId: string;
   name: string;
-  arabicText?: string;
-  description?: string;
+  arabicText?: string | null;
+  description?: string | null;
   targetCount: number;
-  targetDate?: string;
-  status: "active" | "completed" | "archived";
-  sortOrder: number;
+  targetDate?: string | null;
+  status?: string | null;
+  sortOrder?: number | null;
   createdAt: string;
-  completedAt?: string;
+  completedAt?: string | null;
 }
 interface OldEntry {
   id: string;
@@ -28,7 +28,7 @@ interface OldEntry {
   trackerId: string;
   amount: number;
   entryDate: string;
-  note?: string;
+  note?: string | null;
   createdAt: string;
 }
 
@@ -39,20 +39,70 @@ export interface LocalDataSummary {
   payload: LocalMigrationPayload;
 }
 
-export async function detectPhase1Data(usernameNormalized: string): Promise<LocalDataSummary | null> {
+// In-memory session cache so we scan IndexedDB once per authenticated session
+// even if the caller renders us many times.
+const detectionCache = new Map<string, LocalDataSummary | null>();
+
+export function invalidateDetectionCache(usernameNormalized?: string): void {
+  if (usernameNormalized) detectionCache.delete(usernameNormalized);
+  else detectionCache.clear();
+}
+
+/**
+ * Strips undefined values and returns a plain-object payload that is safe to
+ * send over Server Actions. Undefined properties on the wire are inconsistent
+ * across React/Next versions — we normalize to explicit nulls for all optional
+ * strings, which the server schema accepts (`.nullish()`).
+ */
+function sanitizePayload(payload: LocalMigrationPayload): LocalMigrationPayload {
+  return {
+    usernameNormalized: String(payload.usernameNormalized ?? ""),
+    trackers: payload.trackers.map((t) => ({
+      externalId: t.externalId,
+      name: t.name,
+      arabicText: t.arabicText ?? null,
+      description: t.description ?? null,
+      targetCount: t.targetCount,
+      targetDate: t.targetDate ?? null,
+      status: t.status ?? null,
+      sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : null,
+      startedAt: t.startedAt ?? null,
+      completedAt: t.completedAt ?? null,
+    })),
+    entries: payload.entries.map((e) => ({
+      trackerExternalId: e.trackerExternalId,
+      amount: e.amount,
+      entryDate: e.entryDate,
+      note: e.note ?? null,
+      createdAt: e.createdAt ?? null,
+    })),
+  };
+}
+
+export async function detectPhase1Data(
+  usernameNormalized: string,
+): Promise<LocalDataSummary | null> {
   if (typeof window === "undefined") return null;
+  if (detectionCache.has(usernameNormalized)) {
+    return detectionCache.get(usernameNormalized) ?? null;
+  }
   try {
     const exists = await databaseExists(OLD_DB);
-    if (!exists) return null;
+    if (!exists) {
+      detectionCache.set(usernameNormalized, null);
+      return null;
+    }
     const db = await openDB(OLD_DB, OLD_VERSION);
     if (!db.objectStoreNames.contains("users") || !db.objectStoreNames.contains("trackers")) {
       db.close();
+      detectionCache.set(usernameNormalized, null);
       return null;
     }
     const users = (await db.getAll("users")) as OldUser[];
     const match = users.find((u) => u.usernameLower === usernameNormalized);
     if (!match) {
       db.close();
+      detectionCache.set(usernameNormalized, null);
       return null;
     }
     const trackers = ((await db.getAll("trackers")) as OldTracker[]).filter(
@@ -62,36 +112,42 @@ export async function detectPhase1Data(usernameNormalized: string): Promise<Loca
       (e) => e.userId === match.id,
     );
     db.close();
-    if (trackers.length === 0 && entries.length === 0) return null;
+    if (trackers.length === 0 && entries.length === 0) {
+      detectionCache.set(usernameNormalized, null);
+      return null;
+    }
 
-    return {
+    const summary: LocalDataSummary = {
       usernameNormalized,
       trackerCount: trackers.length,
       entryCount: entries.length,
-      payload: {
+      payload: sanitizePayload({
         usernameNormalized,
         trackers: trackers.map((t) => ({
           externalId: t.id,
           name: t.name,
-          arabicText: t.arabicText,
-          description: t.description,
+          arabicText: t.arabicText ?? null,
+          description: t.description ?? null,
           targetCount: t.targetCount,
-          targetDate: t.targetDate,
-          status: t.status,
-          sortOrder: t.sortOrder,
+          targetDate: t.targetDate ?? null,
+          status: t.status ?? null,
+          sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : null,
           startedAt: t.createdAt,
-          completedAt: t.completedAt,
+          completedAt: t.completedAt ?? null,
         })),
         entries: entries.map((e) => ({
           trackerExternalId: e.trackerId,
           amount: e.amount,
           entryDate: e.entryDate,
-          note: e.note,
+          note: e.note ?? null,
           createdAt: e.createdAt,
         })),
-      },
+      }),
     };
+    detectionCache.set(usernameNormalized, summary);
+    return summary;
   } catch {
+    detectionCache.set(usernameNormalized, null);
     return null;
   }
 }
@@ -108,3 +164,5 @@ async function databaseExists(name: string): Promise<boolean> {
   }
   return true; // best effort — open() call gates the rest
 }
+
+export const __test__ = { sanitizePayload };

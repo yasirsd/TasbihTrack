@@ -5,8 +5,13 @@ import { groupByDay } from "@/lib/calculations/progress";
 import { formatNumber } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date-utils";
 import { EntryItem } from "@/components/entries/entry-item";
-import { CalendarView } from "@/components/history/calendar-view";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
+
+const CalendarView = dynamic(
+  () => import("@/components/history/calendar-view").then((m) => m.CalendarView),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-2xl bg-muted/30" /> },
+);
 
 type View = "timeline" | "calendar";
 

@@ -1,6 +1,7 @@
 "use server";
 
 import "server-only";
+import crypto from "node:crypto";
 import { withTransaction } from "@/lib/server/db";
 import { requireUser } from "@/lib/server/session";
 import { entryFromRow, type EntryRow, type TrackerRow } from "@/lib/server/serializers";
@@ -13,6 +14,10 @@ import { markCompleted, todayLocalKey } from "@/lib/server/tracker-helpers";
 export async function createEntryAction(input: CreateEntryInput): Promise<ProgressEntry> {
   const user = await requireUser();
   const parsed = createEntrySchema.parse(input);
+  // Idempotency: if the client provides a UUID (offline-queue flush,
+  // retried mutation), we insert with that id and ON CONFLICT DO NOTHING.
+  // A repeat of the same id is a no-op and returns the existing row.
+  const id = parsed.clientId ?? crypto.randomUUID();
   return withTransaction(async (client) => {
     const trackerRow = await client.query<TrackerRow>(
       `select * from trackers where id = $1 and user_id = $2 and deleted_at is null for update`,
@@ -22,10 +27,12 @@ export async function createEntryAction(input: CreateEntryInput): Promise<Progre
     const tracker = trackerRow.rows[0];
     const prevTotal = await totalForTrackerInTx(client, parsed.trackerId);
     const insert = await client.query<EntryRow>(
-      `insert into progress_entries (user_id, tracker_id, amount, entry_date, note)
-       values ($1, $2, $3, $4, $5)
+      `insert into progress_entries (id, user_id, tracker_id, amount, entry_date, note)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (id) do nothing
        returning *`,
       [
+        id,
         user.id,
         parsed.trackerId,
         parsed.amount,
@@ -33,6 +40,16 @@ export async function createEntryAction(input: CreateEntryInput): Promise<Progre
         parsed.note ?? null,
       ],
     );
+    if (insert.rowCount === 0) {
+      // Duplicate submit / retry — return the row that already exists,
+      // scoped to this user so a colliding id from another account 404s.
+      const existing = await client.query<EntryRow>(
+        `select * from progress_entries where id = $1 and user_id = $2 and deleted_at is null`,
+        [id, user.id],
+      );
+      if (existing.rowCount === 0) throw new Error("Entry not found");
+      return entryFromRow(existing.rows[0]);
+    }
     const nextTotal = prevTotal + parsed.amount;
     const target = Number(tracker.target_count);
     const crossed = crossedMilestones(prevTotal, nextTotal, target);

@@ -48,6 +48,18 @@ export function CreateTrackerSheet({
     if (!Number.isFinite(t) || t <= 0) return setError("Target must be greater than zero.");
     const dt = dailyTarget ? Number(dailyTarget) : undefined;
     const sp = startingProgress ? Number(startingProgress) : undefined;
+    if (dt !== undefined && dt > t) {
+      return setError("Daily target can't exceed the overall target.");
+    }
+    if (sp !== undefined && sp > t) {
+      return setError("Already completed can't be more than the target.");
+    }
+    if (date) {
+      const chosen = new Date(date + "T00:00").getTime();
+      if (Number.isFinite(chosen) && chosen < new Date(new Date().toDateString()).getTime()) {
+        return setError("Target date can't be in the past.");
+      }
+    }
     setSubmitting(true);
     try {
       await createTracker({

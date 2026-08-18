@@ -15,8 +15,19 @@ import { formatNumber, formatPercent, formatSigned } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date-utils";
 import { EntryItem } from "@/components/entries/entry-item";
 import { EditTrackerSheet } from "@/components/trackers/edit-tracker-sheet";
-import { JourneyView } from "@/components/tracker/journey-view";
-import { CalendarView } from "@/components/history/calendar-view";
+import dynamic from "next/dynamic";
+
+// Journey and Calendar are secondary tabs. Defer their JS until the user
+// actually switches to them — the initial paint of the tracker page is
+// hero + tiles + activity only.
+const JourneyView = dynamic(
+  () => import("@/components/tracker/journey-view").then((m) => m.JourneyView),
+  { ssr: false, loading: () => <div className="h-24 animate-pulse rounded-2xl bg-muted/30" /> },
+);
+const CalendarView = dynamic(
+  () => import("@/components/history/calendar-view").then((m) => m.CalendarView),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-2xl bg-muted/30" /> },
+);
 import {
   DropdownMenu,
   DropdownMenuContent,

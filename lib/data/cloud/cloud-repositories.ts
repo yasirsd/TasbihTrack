@@ -22,6 +22,24 @@ import type {
 } from "@/lib/data/types";
 import type { JourneyEvent } from "@/lib/data/journey-types";
 
+export class UnauthorizedError extends Error {
+  code = "unauthorized" as const;
+}
+
+/**
+ * Wrap a server-action call so a missing/expired session surfaces as a
+ * typed error the client can act on (redirect to auth).
+ */
+async function guarded<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const msg = (err as Error)?.message ?? "";
+    if (/Not signed in|unauthorized/i.test(msg)) throw new UnauthorizedError(msg);
+    throw err;
+  }
+}
+
 export interface CloudSnapshot {
   trackers: Tracker[];
   entries: ProgressEntry[];
@@ -29,30 +47,30 @@ export interface CloudSnapshot {
 
 export const cloudRepositories = {
   async list(): Promise<CloudSnapshot> {
-    return listTrackersAction();
+    return guarded(() => listTrackersAction());
   },
   async createTracker(input: CreateTrackerInput): Promise<Tracker> {
-    return createTrackerAction(input);
+    return guarded(() => createTrackerAction(input));
   },
   async updateTracker(id: string, patch: UpdateTrackerInput): Promise<Tracker> {
-    return updateTrackerAction({ ...patch, id });
+    return guarded(() => updateTrackerAction({ ...patch, id }));
   },
   async deleteTracker(id: string): Promise<void> {
-    return deleteTrackerAction(id);
+    return guarded(() => deleteTrackerAction(id));
   },
   async reorderTrackers(ids: string[]): Promise<void> {
-    return reorderTrackersAction(ids);
+    return guarded(() => reorderTrackersAction(ids));
   },
   async createEntry(input: CreateEntryInput): Promise<ProgressEntry> {
-    return createEntryAction(input);
+    return guarded(() => createEntryAction(input));
   },
   async updateEntry(id: string, patch: UpdateEntryInput): Promise<ProgressEntry> {
-    return updateEntryAction({ ...patch, id });
+    return guarded(() => updateEntryAction({ ...patch, id }));
   },
   async deleteEntry(id: string): Promise<void> {
-    return deleteEntryAction(id);
+    return guarded(() => deleteEntryAction(id));
   },
   async trackerEvents(trackerId: string): Promise<JourneyEvent[]> {
-    return trackerEventsAction(trackerId);
+    return guarded(() => trackerEventsAction(trackerId));
   },
 };

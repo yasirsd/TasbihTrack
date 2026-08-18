@@ -79,6 +79,7 @@ export interface UpdateTrackerInput {
 }
 
 export interface CreateEntryInput {
+  clientId?: string;
   trackerId: string;
   amount: number;
   entryDate?: string;

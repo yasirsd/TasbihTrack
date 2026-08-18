@@ -2,7 +2,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Download, LogOut, Moon, Shield, Sun, Trash2, Upload } from "lucide-react";
+import { Download, HardDriveDownload, LogOut, Moon, Shield, Sun, Trash2, Upload } from "lucide-react";
+import { useMigration } from "@/components/migration/migration-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,6 +159,7 @@ export default function ProfilePage() {
       </Section>
 
       <Section title="Data">
+        <ImportLocalRow />
         <div className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4" /> Export backup
@@ -428,5 +430,28 @@ function RestoreDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Manual re-entry into the Phase-1 → cloud migration dialog. Only rendered
+// when a candidate is actually detected AND migration hasn't completed.
+function ImportLocalRow() {
+  const { candidate, openDialog } = useMigration();
+  if (!candidate) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/30 p-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">Local progress on this device</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {candidate.trackerCount === 1 ? "1 goal" : `${candidate.trackerCount} goals`}
+          {" · "}
+          {candidate.entryCount === 1 ? "1 entry" : `${candidate.entryCount} entries`}{" "}
+          not yet imported.
+        </p>
+      </div>
+      <Button size="sm" variant="outline" onClick={openDialog}>
+        <HardDriveDownload className="h-4 w-4" /> Import
+      </Button>
+    </div>
   );
 }
