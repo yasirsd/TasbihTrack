@@ -1,0 +1,65 @@
+"use client";
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-context";
+import { DataProvider } from "@/components/data/data-context";
+import { BottomNav } from "@/components/navigation/bottom-nav";
+import { SideRail } from "@/components/navigation/side-rail";
+import { AddProgressSheet } from "@/components/progress/add-progress-sheet";
+import { CreateTrackerSheet } from "@/components/trackers/create-tracker-sheet";
+import { AddSheetContext, useAddSheet } from "@/components/navigation/add-sheet-context";
+import { OfflineIndicator } from "@/components/pwa/offline-indicator";
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  const router = useRouter();
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [initialTrackerId, setInitialTrackerId] = React.useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (!loading && !session) router.replace("/");
+  }, [loading, session, router]);
+
+  if (loading || !session) {
+    return (
+      <div className="app-shell grid min-h-dvh place-items-center">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-crimson" />
+          Preparing your journey…
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <DataProvider>
+      <AddSheetContext.Provider
+        value={{
+          openAdd: (id) => {
+            setInitialTrackerId(id);
+            setAddOpen(true);
+          },
+          openCreate: () => setCreateOpen(true),
+        }}
+      >
+        <div className="app-shell">
+          <SideRail onAdd={() => setAddOpen(true)} />
+          <div className="lg:pl-72">
+            <main className="mx-auto max-w-3xl px-5 pb-32 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] lg:px-8 lg:pb-16 lg:pt-8">
+              {children}
+            </main>
+          </div>
+          <BottomNav onAdd={() => setAddOpen(true)} />
+          <OfflineIndicator />
+          <AddProgressSheet
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            initialTrackerId={initialTrackerId}
+          />
+          <CreateTrackerSheet open={createOpen} onOpenChange={setCreateOpen} />
+        </div>
+      </AddSheetContext.Provider>
+    </DataProvider>
+  );
+}

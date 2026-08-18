@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 220 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 12%;
+    --primary: 220 15% 12%;
+    --primary-foreground: 40 20% 97%;
+    --secondary: 40 10% 92%;
+    --secondary-foreground: 220 15% 12%;
+    --muted: 40 10% 92%;
+    --muted-foreground: 220 8% 42%;
+    --accent: 40 10% 92%;
+    --accent-foreground: 220 15% 12%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 220 10% 88%;
+    --input: 220 10% 88%;
+    --ring: 354 88% 54%;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .dark {
+    --background: 240 6% 6%;
+    --foreground: 40 15% 96%;
+    --card: 240 6% 8%;
+    --card-foreground: 40 15% 96%;
+    --popover: 240 6% 8%;
+    --popover-foreground: 40 15% 96%;
+    --primary: 40 15% 96%;
+    --primary-foreground: 240 6% 6%;
+    --secondary: 240 5% 14%;
+    --secondary-foreground: 40 15% 96%;
+    --muted: 240 5% 14%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 5% 14%;
+    --accent-foreground: 40 15% 96%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 55%;
+    --success-foreground: 240 6% 6%;
+    --border: 240 5% 16%;
+    --input: 240 5% 20%;
+    --ring: 354 88% 54%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Consistent numeric fonts */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .app-shell {
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at 20% -10%, rgba(239, 35, 60, 0.10), transparent 50%),
+      radial-gradient(circle at 90% 10%, rgba(253, 197, 0, 0.08), transparent 45%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+  }
+
+  .welcome-shell {
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(239, 35, 60, 0.20), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(253, 197, 0, 0.16), transparent 45%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+  }
+
+  .glass-nav {
+    background: color-mix(in oklab, hsl(var(--card)) 78%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid color-mix(in oklab, hsl(var(--border)) 80%, transparent);
+  }
+
+  .hero-number {
+    letter-spacing: -0.03em;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
+  .grain-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Numeric input polish */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
