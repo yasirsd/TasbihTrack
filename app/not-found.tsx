@@ -15,7 +15,7 @@ export default function NotFound() {
           href="/"
           className="inline-block rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background"
         >
-          Back to TasbihTrack
+          Back to 1011 Tracker
         </Link>
       </div>
     </main>

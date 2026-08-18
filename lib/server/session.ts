@@ -6,7 +6,9 @@ import { env } from "./env";
 import type { PoolClient } from "pg";
 
 const COOKIE_NAME = "tt_sid";
-const SESSION_TTL_DAYS = 60;
+const REMEMBERED_TTL_DAYS = 60;
+/** Server-side maximum for non-remembered sessions (idle logout). */
+const SESSION_TTL_DAYS = 1;
 
 interface DbSession {
   id: string;
@@ -20,6 +22,10 @@ interface DbUser {
   username_normalized: string;
   password_hash: string;
   preferences: Record<string, unknown>;
+  first_name: string | null;
+  last_name: string | null;
+  gender: string | null;
+  avatar_config: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +36,10 @@ export interface AuthenticatedUser {
   createdAt: string;
   updatedAt: string;
   preferences: Record<string, unknown>;
+  firstName: string | null;
+  lastName: string | null;
+  gender: "male" | "female" | "prefer_not_to_say" | null;
+  avatarConfig: Record<string, unknown> | null;
 }
 
 function hashToken(token: string): string {
@@ -41,20 +51,34 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString("base64url");
 }
 
-function cookieOptions(expires: Date) {
+/**
+ * Cookie options.
+ *  - When `remember` is true, we set an `expires` date so the cookie
+ *    persists across browser restarts (~60 days).
+ *  - When `remember` is false, we omit `expires` → the browser treats it
+ *    as a session cookie (cleared on browser close). We also expire it
+ *    server-side after `SESSION_TTL_DAYS` for idle timeout.
+ */
+function cookieOptions(expires: Date, remember: boolean) {
   return {
     httpOnly: true,
     secure: env.isProduction,
     sameSite: "lax" as const,
     path: "/",
-    expires,
+    ...(remember ? { expires } : {}),
   };
 }
 
-export async function createSession(userId: string, client?: PoolClient): Promise<string> {
+export async function createSession(
+  userId: string,
+  options?: { rememberMe?: boolean; client?: PoolClient },
+): Promise<string> {
+  const remember = options?.rememberMe ?? true;
+  const client = options?.client;
   const token = generateToken();
   const tokenHash = hashToken(token);
-  const expires = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+  const ttlDays = remember ? REMEMBERED_TTL_DAYS : SESSION_TTL_DAYS;
+  const expires = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
   const ua = (await headers()).get("user-agent")?.slice(0, 400) ?? null;
 
   const exec = client
@@ -70,7 +94,7 @@ export async function createSession(userId: string, client?: PoolClient): Promis
   );
 
   const jar = await cookies();
-  jar.set(COOKIE_NAME, token, cookieOptions(expires));
+  jar.set(COOKIE_NAME, token, cookieOptions(expires, remember));
   return token;
 }
 
@@ -104,7 +128,8 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     `select s.id, s.user_id, s.expires_at,
             u.id as u_id, u.username, u.username_normalized,
             u.preferences, u.created_at as u_created_at, u.updated_at as u_updated_at,
-            u.password_hash
+            u.password_hash,
+            u.first_name, u.last_name, u.gender, u.avatar_config
        from sessions s
        join users u on u.id = s.user_id
       where s.token_hash = $1
@@ -116,18 +141,22 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     jar.delete(COOKIE_NAME);
     return null;
   }
-  // Best-effort last_seen bump — non-blocking correctness.
   void query(`update sessions set last_seen_at = now() where token_hash = $1`, [
     hashToken(raw),
   ]).catch(() => undefined);
 
   const u = row as unknown as Record<string, unknown>;
+  const gender = u.gender as AuthenticatedUser["gender"];
   return {
     id: String(u.u_id),
     username: String(u.username),
     createdAt: String(u.u_created_at),
     updatedAt: String(u.u_updated_at),
     preferences: (u.preferences as Record<string, unknown>) ?? {},
+    firstName: (u.first_name as string | null) ?? null,
+    lastName: (u.last_name as string | null) ?? null,
+    gender: gender ?? null,
+    avatarConfig: (u.avatar_config as Record<string, unknown> | null) ?? null,
   };
 }
 
@@ -141,7 +170,6 @@ export class AuthError extends Error {
   code = "unauthorized" as const;
 }
 
-// Convenience wrapper used by many mutations
 export async function withUserTx<T>(
   fn: (client: PoolClient, user: AuthenticatedUser) => Promise<T>,
 ): Promise<T> {

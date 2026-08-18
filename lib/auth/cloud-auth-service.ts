@@ -7,17 +7,20 @@ import {
   logoutAction,
   registerAction,
   updatePreferencesAction,
+  updateProfileAction,
 } from "@/lib/server/actions/auth-actions";
-import type { AuthErrorCode, AuthResponse, AuthService, AuthSession } from "./types";
+import type { AuthPublicUser } from "@/lib/server/actions/auth-schemas";
+import type {
+  AuthErrorCode,
+  AuthResponse,
+  AuthService,
+  AuthSession,
+  ProfileUpdatePayload,
+  RegistrationPayload,
+} from "./types";
 import type { PublicUser, UserPreferences } from "@/lib/data/types";
 
-function toSession(user: {
-  id: string;
-  username: string;
-  createdAt: string;
-  updatedAt: string;
-  preferences: UserPreferences;
-}): AuthSession {
+function toSession(user: AuthPublicUser): AuthSession {
   return {
     user: user as PublicUser,
     startedAt: new Date().toISOString(),
@@ -34,7 +37,9 @@ export class CloudAuthService implements AuthService {
 
   onChange(listener: (session: AuthSession | null) => void): () => void {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   currentSession(): AuthSession | null {
@@ -52,8 +57,8 @@ export class CloudAuthService implements AuthService {
     }
   }
 
-  async createAccount(username: string, password: string): Promise<AuthResponse> {
-    const res = await registerAction(username, password);
+  async createAccount(payload: RegistrationPayload): Promise<AuthResponse> {
+    const res = await registerAction(payload, payload.rememberMe ?? true);
     if (!res.ok || !res.user) {
       return { ok: false, code: mapCode(res.code), message: res.error ?? "Couldn't create account." };
     }
@@ -62,8 +67,12 @@ export class CloudAuthService implements AuthService {
     return { ok: true, session: this.session };
   }
 
-  async signIn(username: string, password: string): Promise<AuthResponse> {
-    const res = await loginAction(username, password);
+  async signIn(
+    username: string,
+    password: string,
+    rememberMe: boolean = true,
+  ): Promise<AuthResponse> {
+    const res = await loginAction(username, password, rememberMe);
     if (!res.ok || !res.user) {
       return { ok: false, code: mapCode(res.code), message: res.error ?? "Sign in failed." };
     }
@@ -89,7 +98,6 @@ export class CloudAuthService implements AuthService {
   }
 
   async listAccounts() {
-    // Cloud accounts aren't listable from a device.
     return [];
   }
 
@@ -116,6 +124,16 @@ export class CloudAuthService implements AuthService {
       this.emit();
     }
     return this.session;
+  }
+
+  async updateProfile(patch: ProfileUpdatePayload): Promise<AuthResponse> {
+    const res = await updateProfileAction(patch);
+    if (!res.ok || !res.user) {
+      return { ok: false, code: mapCode(res.code), message: res.error ?? "Couldn't update profile." };
+    }
+    this.session = toSession(res.user);
+    this.emit();
+    return { ok: true, session: this.session };
   }
 }
 

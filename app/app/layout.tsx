@@ -11,6 +11,7 @@ import { AddSheetContext, useAddSheet } from "@/components/navigation/add-sheet-
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { ImportLocalDialog } from "@/components/migration/import-local-dialog";
 import { MigrationProvider } from "@/components/migration/migration-context";
+import { CompleteProfileDialog } from "@/components/profile/complete-profile-dialog";
 import { CelebrationProvider } from "@/components/celebration/celebration-context";
 import { MilestoneCelebration } from "@/components/celebration/milestone-celebration";
 import { SyncIndicator } from "@/components/pwa/sync-indicator";
@@ -67,6 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <OfflineIndicator />
           <SyncIndicator />
           <ImportLocalDialog />
+          <CompleteProfileDialog />
           <AddProgressSheet
             open={addOpen}
             onOpenChange={setAddOpen}

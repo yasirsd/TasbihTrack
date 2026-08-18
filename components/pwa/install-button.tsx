@@ -57,7 +57,7 @@ export function InstallButton() {
           setDeferred(null);
         }}
       >
-        <Download className="h-4 w-4" /> Install TasbihTrack
+        <Download className="h-4 w-4" /> Install 1011 Tracker
       </Button>
     );
   }
@@ -79,7 +79,7 @@ export function InstallButton() {
 
   return (
     <div className="text-sm text-muted-foreground">
-      Install is offered by your browser when supported. Open TasbihTrack in a Chromium browser to see the prompt.
+      Install is offered by your browser when supported. Open 1011 Tracker in a Chromium browser to see the prompt.
     </div>
   );
 }

@@ -1,7 +1,7 @@
 {
-  "name": "TasbihTrack",
-  "short_name": "TasbihTrack",
-  "description": "Set a goal. Track the journey.",
+  "name": "1011 Tracker",
+  "short_name": "1011",
+  "description": "Track meaningful Dhikr goals, daily progress, and long-term journeys.",
   "start_url": "/app/dashboard",
   "scope": "/",
   "display": "standalone",

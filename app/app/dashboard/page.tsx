@@ -11,6 +11,7 @@ import { TrackerCard } from "@/components/dashboard/tracker-card";
 import { DashboardEmpty } from "@/components/dashboard/empty-state";
 import { Button } from "@/components/ui/button";
 import { EditTrackerSheet } from "@/components/trackers/edit-tracker-sheet";
+import { TasbihAvatar } from "@/components/avatar/tasbih-avatar";
 import type { Tracker } from "@/lib/data/types";
 
 function greeting(): string {
@@ -41,13 +42,22 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="px-1"
+        className="flex items-start gap-3 px-1"
       >
-        <p className="text-sm text-muted-foreground">Assalamu Alaikum,</p>
-        <h1 className="mt-0.5 text-3xl font-semibold tracking-tight">
-          {session?.user.username ?? "Friend"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{greeting()}.</p>
+        <TasbihAvatar
+          config={session?.user.profile?.avatar ?? null}
+          gender={session?.user.profile?.gender ?? null}
+          size={48}
+          ariaHidden
+          className="mt-0.5"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-muted-foreground">Assalamu Alaikum,</p>
+          <h1 className="mt-0.5 truncate text-3xl font-semibold tracking-tight">
+            {session?.user.profile?.firstName || session?.user.username || "Friend"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{greeting()}.</p>
+        </div>
       </motion.header>
 
       <TodaySummary entries={entries} trackers={trackers} />

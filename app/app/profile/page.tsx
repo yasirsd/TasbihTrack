@@ -2,8 +2,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Download, HardDriveDownload, LogOut, Moon, Shield, Sun, Trash2, Upload } from "lucide-react";
+import { Download, HardDriveDownload, LogOut, Moon, Pencil, Shield, Sun, Trash2, Upload } from "lucide-react";
 import { useMigration } from "@/components/migration/migration-context";
+import { TasbihAvatar } from "@/components/avatar/tasbih-avatar";
+import { EditProfileSheet } from "@/components/profile/edit-profile-sheet";
+import type { Gender } from "@/lib/data/types";
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,8 +56,12 @@ export default function ProfilePage() {
     }
   }, []);
 
-  const showStreaks =
-    (session?.user.preferences as { showStreaks?: boolean } | undefined)?.showStreaks ?? false;
+  const [editProfileOpen, setEditProfileOpen] = React.useState(false);
+  const profile = session?.user.profile;
+  const displayName =
+    profile?.firstName && profile?.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : profile?.firstName ?? session?.user.username ?? "";
 
   async function requestPersist() {
     if (!("storage" in navigator) || !("persist" in navigator.storage)) return;
@@ -99,19 +106,31 @@ export default function ProfilePage() {
     router.replace("/");
   }
 
-  async function toggleStreaks(next: boolean) {
-    await service.updatePreferences({ showStreaks: next });
-  }
-
   return (
     <div className="space-y-6">
-      <header className="px-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Settings and account.</p>
+      <header className="flex flex-col items-center gap-3 pt-2 text-center">
+        <TasbihAvatar
+          config={profile?.avatar ?? null}
+          gender={profile?.gender ?? null}
+          size={96}
+          alt="Your profile avatar"
+        />
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{displayName}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            @{session?.user.username}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setEditProfileOpen(true)}
+        >
+          <Pencil className="h-3.5 w-3.5" /> Edit profile
+        </Button>
       </header>
 
       <Section title="Account">
-        <Row label="Username" value={session?.user.username ?? ""} />
         <Button variant="outline" onClick={() => setShowChangePw(true)}>
           <Shield className="h-4 w-4" /> Change password
         </Button>
@@ -132,23 +151,6 @@ export default function ProfilePage() {
             <Moon className="h-3.5 w-3.5" /> Dark
           </ThemeChip>
         </div>
-      </Section>
-
-      <Section title="Insights">
-        <label className="flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3 text-sm">
-          <span>
-            Show streaks
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              Consecutive days with progress.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            checked={showStreaks}
-            onChange={(e) => toggleStreaks(e.target.checked)}
-            className="h-5 w-5 accent-crimson"
-          />
-        </label>
       </Section>
 
       <Section title="App">
@@ -213,6 +215,16 @@ export default function ProfilePage() {
         onCancel={() => setPendingBackup(null)}
         onConfirm={confirmRestore}
       />
+      <EditProfileSheet
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+        initial={{
+          firstName: profile?.firstName ?? "",
+          lastName: profile?.lastName ?? "",
+          gender: (profile?.gender ?? "prefer_not_to_say") as Gender,
+          avatarConfig: profile?.avatar ?? null,
+        }}
+      />
     </div>
   );
 }
@@ -227,15 +239,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {children}
       </div>
     </section>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between px-1 py-1">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
-    </div>
   );
 }
 
@@ -417,7 +420,7 @@ function RestoreDialog({
         </DialogHeader>
         {backup && (
           <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm">
-            <p className="font-medium">TasbihTrack Backup{backup.user ? ` — ${backup.user.username}` : ""}</p>
+            <p className="font-medium">1011 Tracker backup{backup.user ? ` — ${backup.user.username}` : ""}</p>
             <p className="text-muted-foreground">
               {backup.trackers?.length ?? 0} goals · {backup.entries?.length ?? 0} entries
             </p>

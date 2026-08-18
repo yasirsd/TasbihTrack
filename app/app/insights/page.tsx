@@ -2,7 +2,6 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { useData } from "@/components/data/data-context";
-import { useAuth } from "@/components/auth/auth-context";
 import {
   bestActivityDay,
   computeTrackerStats,
@@ -15,7 +14,6 @@ import { formatShortDay, formatRelativeDate, todayKey } from "@/lib/date-utils";
 
 export default function InsightsPage() {
   const { entries, trackers } = useData();
-  const { session } = useAuth();
   const today = todayKey();
   const todayTotal = entries
     .filter((e) => e.entryDate === today)
@@ -30,9 +28,10 @@ export default function InsightsPage() {
   const bestGoal = mostActiveTracker(activeTrackers, entries);
   const bestDay = bestActivityDay(entries);
   const weekly = weeklyComparison(entries);
-  const showStreaks =
-    (session?.user.preferences as { showStreaks?: boolean } | undefined)?.showStreaks ?? false;
-  const streak = showStreaks ? currentStreakDays(entries) : 0;
+  // Streak is now always calculated (§60). We only surface it when it is
+  // meaningful — hidden entirely at 0 to avoid guilt UX (§61, §62).
+  const streak = currentStreakDays(entries);
+  const showStreak = streak > 0;
 
   return (
     <div className="space-y-6">
@@ -102,7 +101,7 @@ export default function InsightsPage() {
             </p>
           )}
         </div>
-        {showStreaks && (
+        {showStreak && (
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Current streak</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">

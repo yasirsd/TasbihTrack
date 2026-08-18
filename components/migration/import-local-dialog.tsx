@@ -83,7 +83,7 @@ export function ImportLocalDialog() {
         <DialogHeader>
           <DialogTitle>Local progress found</DialogTitle>
           <DialogDescription>
-            We found TasbihTrack progress stored on this device for the same username.
+            We found earlier progress stored on this device for the same username.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm">

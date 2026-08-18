@@ -1,10 +1,36 @@
 export type TrackerStatus = "active" | "paused" | "completed" | "archived";
 
+export type Gender = "male" | "female" | "prefer_not_to_say";
+
+export interface AvatarConfig {
+  /** Preset key from the curated avatar set. */
+  preset: string;
+  /** Skin tone id (e.g. "s1".."s5"). */
+  skinTone?: string;
+  /** Background color id (e.g. "b1".."b6"). */
+  background?: string;
+  /** Headwear id: kufi | hijab | none — must be compatible with the preset. */
+  headwear?: string;
+}
+
+export interface PublicProfile {
+  firstName: string | null;
+  lastName: string | null;
+  gender: Gender | null;
+  avatar: AvatarConfig | null;
+}
+
 export interface UserPreferences {
   theme?: "system" | "light" | "dark";
+  /**
+   * @deprecated Streak is now always shown when non-zero. Retained on legacy
+   * rows to avoid a destructive migration; ignored by product code.
+   */
   showStreaks?: boolean;
   onboardedAt?: string;
   localMigrationCompletedAt?: string;
+  /** Set when the legacy-user profile-completion dialog was dismissed. */
+  profileCompletionDismissedAt?: string;
 }
 
 export interface StoredUser {
@@ -25,6 +51,7 @@ export interface PublicUser {
   createdAt: string;
   updatedAt: string;
   preferences: UserPreferences;
+  profile: PublicProfile;
 }
 
 export interface Tracker {

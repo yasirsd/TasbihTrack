@@ -13,65 +13,84 @@ import {
   type AuthenticatedUser,
 } from "@/lib/server/session";
 import { passwordSchema, usernameSchema } from "@/lib/validation";
-import type { UserPreferences } from "@/lib/data/types";
+import type {
+  AvatarConfig,
+  Gender,
+  UserPreferences,
+} from "@/lib/data/types";
+import { defaultAvatarFor, sanitizeAvatarConfig } from "@/lib/avatar/config";
+import {
+  profileUpdateSchema,
+  registrationSchema,
+  type AuthActionResult,
+  type AuthPublicUser,
+} from "./auth-schemas";
 
-export interface AuthActionResult {
-  ok: boolean;
-  user?: {
-    id: string;
-    username: string;
-    createdAt: string;
-    updatedAt: string;
-    preferences: UserPreferences;
-  };
-  error?: string;
-  code?:
-    | "invalid_input"
-    | "username_taken"
-    | "invalid_credentials"
-    | "rate_limited"
-    | "unauthorized"
-    | "internal";
-}
+// ---------------------------------------------------------------------------
+// Serializer
+// ---------------------------------------------------------------------------
 
-function toPublic(u: AuthenticatedUser) {
+function toPublic(u: AuthenticatedUser): AuthPublicUser {
   return {
     id: u.id,
     username: u.username,
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
     preferences: (u.preferences ?? {}) as UserPreferences,
+    profile: {
+      firstName: u.firstName,
+      lastName: u.lastName,
+      gender: u.gender,
+      avatar: sanitizeAvatarConfig(u.avatarConfig) as AvatarConfig | null,
+    },
   };
 }
 
+// ---------------------------------------------------------------------------
+// Register — extended payload; atomic user+profile insert; one session
+// ---------------------------------------------------------------------------
+
 export async function registerAction(
-  username: string,
-  password: string,
+  raw: unknown,
+  rememberMe: boolean = true,
 ): Promise<AuthActionResult> {
-  const u = usernameSchema.safeParse(username);
-  if (!u.success) return { ok: false, code: "invalid_input", error: u.error.issues[0]?.message };
-  const p = passwordSchema.safeParse(password);
-  if (!p.success) return { ok: false, code: "invalid_input", error: p.error.issues[0]?.message };
-  const normalized = u.data;
+  const parsed = registrationSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "invalid_input",
+      error: parsed.error.issues[0]?.message ?? "Please check the form.",
+    };
+  }
+  const input = parsed.data;
+  const normalized = input.username;
+  const avatar = defaultAvatarFor(input.gender);
 
   try {
-    const hash = await hashPassword(p.data);
+    const hash = await hashPassword(input.password);
     const row = await withTransaction(async (client) => {
       const existing = await client.query(
         `select id from users where username_normalized = $1 limit 1`,
         [normalized],
       );
-      if (existing.rowCount) {
-        throw new UsernameTakenError();
-      }
+      if (existing.rowCount) throw new UsernameTakenError();
       const insert = await client.query(
-        `insert into users (username, username_normalized, password_hash, preferences)
-         values ($1, $1, $2, '{"theme":"system"}'::jsonb)
-         returning id, username, username_normalized, preferences, created_at, updated_at`,
-        [normalized, hash],
+        `insert into users
+           (username, username_normalized, password_hash, preferences,
+            first_name, last_name, gender, avatar_config)
+         values ($1, $1, $2, '{"theme":"system"}'::jsonb, $3, $4, $5, $6::jsonb)
+         returning *`,
+        [
+          normalized,
+          hash,
+          input.firstName,
+          input.lastName.length ? input.lastName : null,
+          input.gender,
+          JSON.stringify(avatar),
+        ],
       );
       const user = insert.rows[0];
-      await createSession(user.id, client);
+      await createSession(user.id, { rememberMe, client });
       return user;
     });
     return {
@@ -82,6 +101,12 @@ export async function registerAction(
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
         preferences: (row.preferences ?? {}) as UserPreferences,
+        profile: {
+          firstName: row.first_name ?? null,
+          lastName: row.last_name ?? null,
+          gender: (row.gender ?? null) as Gender | null,
+          avatar: sanitizeAvatarConfig(row.avatar_config),
+        },
       },
     };
   } catch (err) {
@@ -93,9 +118,14 @@ export async function registerAction(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Login — now takes rememberMe
+// ---------------------------------------------------------------------------
+
 export async function loginAction(
   username: string,
   password: string,
+  rememberMe: boolean = true,
 ): Promise<AuthActionResult> {
   const u = usernameSchema.safeParse(username);
   if (!u.success)
@@ -118,10 +148,16 @@ export async function loginAction(
     username: string;
     password_hash: string;
     preferences: UserPreferences;
+    first_name: string | null;
+    last_name: string | null;
+    gender: Gender | null;
+    avatar_config: unknown;
     created_at: string;
     updated_at: string;
   }>(
-    `select id, username, password_hash, preferences, created_at, updated_at
+    `select id, username, password_hash, preferences,
+            first_name, last_name, gender, avatar_config,
+            created_at, updated_at
        from users where username_normalized = $1 limit 1`,
     [normalized],
   );
@@ -132,7 +168,7 @@ export async function loginAction(
   if (!ok || !row) {
     return { ok: false, code: "invalid_credentials", error: "Username or password is incorrect." };
   }
-  await createSession(row.id);
+  await createSession(row.id, { rememberMe });
   return {
     ok: true,
     user: {
@@ -141,9 +177,19 @@ export async function loginAction(
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       preferences: row.preferences ?? {},
+      profile: {
+        firstName: row.first_name,
+        lastName: row.last_name,
+        gender: row.gender,
+        avatar: sanitizeAvatarConfig(row.avatar_config),
+      },
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Simple wrappers
+// ---------------------------------------------------------------------------
 
 export async function logoutAction(): Promise<{ ok: true }> {
   await destroyCurrentSession();
@@ -201,6 +247,64 @@ export async function updatePreferencesAction(
     return { ok: false, code: "internal", error: "Couldn't update preferences." };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Profile update — server-side sanitization for avatar_config (§71, §73)
+// ---------------------------------------------------------------------------
+
+export async function updateProfileAction(raw: unknown): Promise<AuthActionResult> {
+  try {
+    const user = await requireUser();
+    const parsed = profileUpdateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        code: "invalid_input",
+        error: parsed.error.issues[0]?.message ?? "Please check the form.",
+      };
+    }
+    const input = parsed.data;
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let i = 1;
+    if (input.firstName !== undefined) {
+      fields.push(`first_name = $${i++}`);
+      values.push(input.firstName);
+    }
+    if (input.lastName !== undefined) {
+      fields.push(`last_name = $${i++}`);
+      values.push(input.lastName.length ? input.lastName : null);
+    }
+    if (input.gender !== undefined) {
+      fields.push(`gender = $${i++}`);
+      values.push(input.gender);
+    }
+    if (input.avatarConfig !== undefined) {
+      const sanitized = sanitizeAvatarConfig(input.avatarConfig);
+      // Avatar config is optional — clear it if the client sent an invalid
+      // shape rather than throwing.
+      fields.push(`avatar_config = $${i++}::jsonb`);
+      values.push(sanitized ? JSON.stringify(sanitized) : null);
+    }
+    if (fields.length === 0) {
+      return { ok: true, user: toPublic(user) };
+    }
+    values.push(user.id);
+    await query(
+      `update users set ${fields.join(", ")} where id = $${i}`,
+      values,
+    );
+    const refreshed = (await getCurrentUser())!;
+    return { ok: true, user: toPublic(refreshed) };
+  } catch (err) {
+    console.error("updateProfileAction", err);
+    return { ok: false, code: "internal", error: "Couldn't update profile." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
 
 export async function deleteAccountAction(password: string): Promise<AuthActionResult> {
   try {

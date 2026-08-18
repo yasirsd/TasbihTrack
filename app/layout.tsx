@@ -4,21 +4,32 @@ import { AppProviders } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "TasbihTrack — Set a goal. Track the journey.",
-    template: "%s · TasbihTrack",
+    default: "1011 Tracker — Track Your Dhikr Journey",
+    template: "%s · 1011 Tracker",
   },
   description:
-    "Track your Dhikr intentions, record your progress, and keep your journey with you.",
-  applicationName: "TasbihTrack",
+    "Track meaningful Dhikr goals, daily progress, and long-term journeys.",
+  applicationName: "1011 Tracker",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "TasbihTrack",
+    title: "1011 Tracker",
     statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [{ url: "/icons/favicon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    title: "1011 Tracker",
+    description: "Track meaningful Dhikr goals, daily progress, and long-term journeys.",
+    siteName: "1011 Tracker",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "1011 Tracker",
+    description: "Track meaningful Dhikr goals, daily progress, and long-term journeys.",
   },
   formatDetection: { telephone: false },
 };
