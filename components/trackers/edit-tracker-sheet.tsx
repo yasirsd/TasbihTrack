@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
+import { targetToWords } from "@/lib/number-words";
 import type { Tracker } from "@/lib/data/types";
 
 export function EditTrackerSheet({
@@ -92,10 +93,23 @@ export function EditTrackerSheet({
             <Input
               id="etarget"
               inputMode="numeric"
+              enterKeyHint="next"
               value={target}
               onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
               disabled={submitting}
             />
+            {(() => {
+              const r = targetToWords(target);
+              if (!r) return null;
+              return (
+                <div className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+                  <p className="tabular-nums text-foreground">
+                    {r.value.toLocaleString("en-US")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{r.words}</p>
+                </div>
+              );
+            })()}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="edaily">Daily target (optional)</Label>

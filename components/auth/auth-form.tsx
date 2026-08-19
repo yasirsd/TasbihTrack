@@ -18,9 +18,20 @@ type Mode = "signIn" | "signUp";
  * secondary link at the bottom, not a tab. This mirrors what returning
  * users need — they type username + password, not a full registration form.
  */
-export function AuthForm() {
+export function AuthForm({
+  onModeChange,
+}: {
+  onModeChange?: (mode: Mode) => void;
+}) {
   const { service } = useAuth();
-  const [mode, setMode] = React.useState<Mode>("signIn");
+  const [mode, setModeState] = React.useState<Mode>("signIn");
+  const setMode = React.useCallback(
+    (m: Mode) => {
+      setModeState(m);
+      onModeChange?.(m);
+    },
+    [onModeChange],
+  );
   const router = useRouter();
   const { toast } = useToast();
 
@@ -118,6 +129,7 @@ function SignInForm({
           id="signin-username"
           autoComplete="username"
           inputMode="text"
+          enterKeyHint="next"
           autoCapitalize="none"
           spellCheck={false}
           value={username}
@@ -134,6 +146,7 @@ function SignInForm({
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
+          enterKeyHint="go"
           show={showPassword}
           onToggleShow={() => setShowPassword((s) => !s)}
         />
@@ -251,6 +264,8 @@ function SignUpForm({
           <Input
             id="reg-first"
             autoComplete="given-name"
+            enterKeyHint="next"
+            autoCapitalize="words"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             required
@@ -261,6 +276,8 @@ function SignUpForm({
           <Input
             id="reg-last"
             autoComplete="family-name"
+            enterKeyHint="next"
+            autoCapitalize="words"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
@@ -303,6 +320,7 @@ function SignUpForm({
           id="reg-username"
           autoComplete="username"
           inputMode="text"
+          enterKeyHint="next"
           autoCapitalize="none"
           spellCheck={false}
           value={username}
@@ -322,6 +340,7 @@ function SignUpForm({
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
+          enterKeyHint="go"
           show={showPassword}
           onToggleShow={() => setShowPassword((s) => !s)}
         />
@@ -370,6 +389,7 @@ function PasswordField({
   value,
   onChange,
   autoComplete,
+  enterKeyHint,
   show,
   onToggleShow,
 }: {
@@ -377,6 +397,7 @@ function PasswordField({
   value: string;
   onChange: (v: string) => void;
   autoComplete: string;
+  enterKeyHint?: "go" | "next" | "done";
   show: boolean;
   onToggleShow: () => void;
 }) {
@@ -386,6 +407,7 @@ function PasswordField({
         id={id}
         type={show ? "text" : "password"}
         autoComplete={autoComplete}
+        enterKeyHint={enterKeyHint}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="At least 6 characters"

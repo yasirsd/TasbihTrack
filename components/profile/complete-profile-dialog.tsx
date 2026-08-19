@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
+import { useMigration } from "@/components/migration/migration-context";
 import type { Gender } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,9 @@ const DISMISS_KEY = (userId: string) => `1011:profile-completion-dismissed:${use
 export function CompleteProfileDialog() {
   const { session, service } = useAuth();
   const { toast } = useToast();
+  // Modal priority (§77): if the migration dialog is currently visible,
+  // wait its turn so we never stack two auto-prompts on top of each other.
+  const migration = useMigration();
   const user = session?.user;
   const profile = user?.profile;
 
@@ -50,14 +54,18 @@ export function CompleteProfileDialog() {
   React.useEffect(() => {
     if (!user) return setOpen(false);
     if (!needsCompletion) return setOpen(false);
-    // Respect a per-session dismissal for the current user.
+    // Yield to a higher-priority auto-prompt (migration).
+    if (migration.open) {
+      setOpen(false);
+      return;
+    }
     try {
       if (sessionStorage.getItem(DISMISS_KEY(user.id)) === "1") return;
     } catch {
       /* ignore */
     }
     setOpen(true);
-  }, [user, needsCompletion]);
+  }, [user, needsCompletion, migration.open]);
 
   React.useEffect(() => {
     if (open && profile) {

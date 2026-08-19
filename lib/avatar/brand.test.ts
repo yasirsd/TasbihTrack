@@ -27,10 +27,10 @@ describe("Brand rename — user-facing surfaces", () => {
     expect(manifest.short_name).toBe("1011");
   });
 
-  it("app/page.tsx (welcome) displays the new brand", () => {
-    const page = read("app/page.tsx");
-    expect(page).toContain("1011 Tracker");
-    expect(page).not.toContain("TasbihTrack");
+  it("welcome shell displays the new brand", () => {
+    const shell = read("components/auth/welcome-shell.tsx");
+    expect(shell).toContain("1011 Tracker");
+    expect(shell).not.toContain("TasbihTrack");
   });
 
   it("install button says Install 1011 Tracker", () => {

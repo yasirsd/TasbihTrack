@@ -139,3 +139,16 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Keyboard-safe focus: give text-entry form controls breathing room above
+ * and below when the mobile browser scrolls them into view over the on-
+ * screen keyboard. Prevents the "focused input hides behind the keyboard"
+ * class of bugs on iOS Safari and Android Chrome.
+ *
+ * Deliberately NOT applied to <button> — a button in a scrollable list
+ * shouldn't force a 96px jump on focus. (Per 4C.2B.1 §19 review.) */
+input,
+textarea,
+select {
+  scroll-margin-block: 96px;
+}

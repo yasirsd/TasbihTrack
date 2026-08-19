@@ -41,19 +41,31 @@ export const SheetContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed z-50 border border-border/60 bg-card shadow-2xl outline-none",
+        "fixed z-50 flex flex-col border border-border/60 bg-card shadow-2xl outline-none",
         side === "bottom" &&
-          "inset-x-0 bottom-0 rounded-t-[32px] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom sm:mx-auto sm:max-w-lg sm:rounded-3xl sm:bottom-6 sm:inset-x-6",
+          // Keyboard-safe: sheet caps at 90dvh so the on-screen keyboard can never
+          // fully cover it. Content scrolls inside; the drag handle + close stay
+          // pinned at the top so they never fall behind the keyboard.
+          "inset-x-0 bottom-0 max-h-[90dvh] rounded-t-[32px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom sm:mx-auto sm:max-w-lg sm:rounded-3xl sm:bottom-6 sm:inset-x-6",
         side === "right" &&
-          "inset-y-0 right-0 h-full w-80 rounded-l-3xl p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+          "inset-y-0 right-0 h-full w-80 rounded-l-3xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
         className,
       )}
       {...props}
     >
-      <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-muted sm:hidden" aria-hidden />
-      {children}
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-pt-6 [scrollbar-gutter:stable]",
+          side === "bottom" &&
+            "px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4",
+          side === "right" && "p-6",
+        )}
+      >
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-muted sm:hidden" aria-hidden />
+        {children}
+      </div>
       {!hideClose && (
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
+        <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-card/80 p-2 text-muted-foreground opacity-70 backdrop-blur transition-opacity hover:opacity-100 focus:outline-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

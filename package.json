@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint:sql": "node scripts/lint-sql.mjs supabase/migrations/0001_init.sql && node scripts/lint-sql.mjs supabase/migrations/0002_user_profile.sql",
-    "db:test": "node scripts/test-db.mjs"
+    "db:test": "node scripts/test-db.mjs",
+    "avatars:scan": "node scripts/scan-avatar-assets.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

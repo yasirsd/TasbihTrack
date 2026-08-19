@@ -9,6 +9,8 @@ export interface AvatarConfig {
   skinTone?: string;
   /** Background color id (e.g. "b1".."b6"). */
   background?: string;
+  /** Outfit tone id (e.g. "o1".."o6") — introduced in v2. */
+  outfitTone?: string;
   /** Headwear id: kufi | hijab | none — must be compatible with the preset. */
   headwear?: string;
 }

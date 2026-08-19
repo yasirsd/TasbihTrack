@@ -9,11 +9,13 @@ import { useToast } from "@/components/ui/toast";
 import { TasbihAvatar } from "@/components/avatar/tasbih-avatar";
 import {
   BACKGROUNDS,
+  OUTFIT_TONES,
   SKIN_TONES,
   defaultAvatarFor,
   getPreset,
   presetsForGender,
   type BackgroundId,
+  type OutfitToneId,
   type SkinToneId,
 } from "@/lib/avatar/config";
 import type { AvatarConfig, Gender } from "@/lib/data/types";
@@ -254,6 +256,28 @@ export function EditProfileSheet({ open, onOpenChange, initial }: EditProfileShe
                       : "border-border/60",
                   )}
                   style={{ backgroundColor: BACKGROUNDS[id] }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Outfit</Label>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(OUTFIT_TONES) as OutfitToneId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setAvatar((prev) => ({ ...prev, outfitTone: id }))}
+                  aria-label={`Outfit ${id}`}
+                  className={cn(
+                    "h-8 w-8 rounded-full border transition-transform",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    avatar.outfitTone === id
+                      ? "scale-110 border-foreground/60"
+                      : "border-border/60",
+                  )}
+                  style={{ backgroundColor: OUTFIT_TONES[id] }}
                 />
               ))}
             </div>
