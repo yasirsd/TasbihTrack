@@ -3,39 +3,11 @@
 import "server-only";
 import { query, withTransaction } from "@/lib/server/db";
 import { requireUser } from "@/lib/server/session";
-import { z } from "zod";
-
-const backupPayloadSchema = z.object({
-  version: z.literal(2),
-  exportedAt: z.string(),
-  trackers: z.array(
-    z.object({
-      externalId: z.string().optional(),
-      name: z.string().min(1),
-      arabicText: z.string().optional(),
-      description: z.string().optional(),
-      targetCount: z.number().int().positive(),
-      dailyTarget: z.number().int().positive().optional(),
-      targetDate: z.string().optional(),
-      status: z.enum(["active", "paused", "completed", "archived"]),
-      isPinned: z.boolean().optional(),
-      sortOrder: z.number().int().optional(),
-      startedAt: z.string().optional(),
-      completedAt: z.string().optional(),
-    }),
-  ),
-  entries: z.array(
-    z.object({
-      trackerExternalId: z.string(),
-      amount: z.number().int().positive(),
-      entryDate: z.string(),
-      note: z.string().optional(),
-      createdAt: z.string().optional(),
-    }),
-  ),
-});
-
-export type CloudBackupPayload = z.infer<typeof backupPayloadSchema>;
+import {
+  BACKUP_VERSION,
+  backupPayloadSchema,
+  type CloudBackupPayload,
+} from "./backup-schema";
 
 export async function exportBackupAction(): Promise<CloudBackupPayload & { user: { username: string } }> {
   const user = await requireUser();
@@ -70,7 +42,7 @@ export async function exportBackupAction(): Promise<CloudBackupPayload & { user:
     [user.id],
   );
   return {
-    version: 2,
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     user: { username: user.username },
     trackers: trackers.map((t) => ({

@@ -19,6 +19,7 @@ import type {
   RegistrationPayload,
 } from "./types";
 import type { PublicUser, UserPreferences } from "@/lib/data/types";
+import { clearQueueForUser, clearSnapshot } from "@/lib/cache/local-cache";
 
 function toSession(user: AuthPublicUser): AuthSession {
   return {
@@ -112,6 +113,14 @@ export class CloudAuthService implements AuthService {
       return { ok: false, code: mapCode(res.code), message: res.error ?? "Couldn't delete account." };
     }
     const removed = this.session;
+    // Server has destroyed the user, their sessions, and (via cascade)
+    // every tracker/entry/event. Purge the browser-local snapshot and any
+    // still-pending offline writes for this user — the DB rows they would
+    // target no longer exist. Best-effort; failures never block sign-out.
+    if (removed?.user.id) {
+      await clearSnapshot(removed.user.id).catch(() => undefined);
+      await clearQueueForUser(removed.user.id).catch(() => undefined);
+    }
     this.session = null;
     this.emit();
     return { ok: true, session: removed ?? ({} as AuthSession) };

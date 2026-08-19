@@ -1,5 +1,10 @@
-/* TasbihTrack service worker — app-shell offline cache */
-const VERSION = "tasbih-v1";
+/* 1011 Tracker service worker — app-shell offline cache.
+ *
+ * Bump VERSION whenever the app shell or cached asset filenames change.
+ * The `activate` handler below deletes every cache whose key does not
+ * match the current VERSION, so old shells (including the pre-rebrand
+ * "tasbih-v1" caches from returning PWA users) are cleared on upgrade. */
+const VERSION = "1011-v2";
 const CORE = [
   "/",
   "/app/dashboard",

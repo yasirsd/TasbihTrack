@@ -16,7 +16,27 @@ const nextConfig = {
     "/**/*": ["./certs/**/*"],
   },
   async headers() {
+    // Baseline hardening applied to every response. We intentionally do NOT
+    // ship a Content-Security-Policy here — Next 15 injects inline scripts
+    // for the RSC bootstrap and hydration payloads, so a naive CSP would
+    // break the app. `X-Frame-Options: DENY` + `Referrer-Policy` +
+    // `X-Content-Type-Options` + a minimal `Permissions-Policy` cover the
+    // highest-value protections (clickjacking, referrer leaks, MIME
+    // sniffing, incidental sensor access) without breaking anything.
+    const baseline = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+      },
+    ];
     return [
+      {
+        source: "/:path*",
+        headers: baseline,
+      },
       {
         source: "/sw.js",
         headers: [

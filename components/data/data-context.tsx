@@ -9,7 +9,6 @@ import {
   updateQueueEntry,
   dequeueWrite,
   listQueue,
-  clearQueueForUser,
   type PendingWrite,
 } from "@/lib/cache/local-cache";
 import type {
@@ -81,11 +80,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Reset in-memory state whenever the active user changes and purge the
   // outgoing account's cached snapshot so nothing lingers across sessions.
+  //
+  // The offline write queue is intentionally NOT cleared here — it is scoped
+  // per-user via its `by_user` index (see listQueue), so User B never sees
+  // User A's pending writes. Preserving them means User A can sign back in
+  // and their unsynced entries still flush. Dropping them here would be
+  // silent data loss on the "sign out, sign in as someone else" path.
   React.useEffect(() => {
     const previous = previousUserRef.current;
     if (previous && previous !== userId) {
       void clearSnapshot(previous).catch(() => undefined);
-      void clearQueueForUser(previous).catch(() => undefined);
       setTrackers([]);
       setEntries([]);
       setPendingCount(0);

@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label";
 import { InstallButton } from "@/components/pwa/install-button";
 import { useToast } from "@/components/ui/toast";
 import { useData } from "@/components/data/data-context";
-import { exportBackupAction, importBackupAction, type CloudBackupPayload } from "@/lib/server/actions/backup-actions";
+import { exportBackupAction, importBackupAction } from "@/lib/server/actions/backup-actions";
+import type { CloudBackupPayload } from "@/lib/server/actions/backup-schema";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +74,7 @@ export default function ProfilePage() {
   async function handleExport() {
     if (!session) return;
     const payload = await exportBackupAction();
-    const name = `tasbihtrack-${session.user.username}-${new Date().toISOString().slice(0, 10)}.json`;
+    const name = `1011tracker-${session.user.username}-${new Date().toISOString().slice(0, 10)}.json`;
     downloadJson(name, payload);
     toast({ title: "Backup exported", tone: "success" });
   }

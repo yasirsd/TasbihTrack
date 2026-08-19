@@ -8,10 +8,22 @@
 --     `anon` and `authenticated` roles by default. We DO NOT want that.
 --     We enable RLS with zero policies AND revoke privileges from those
 --     roles so PostgREST returns "permission denied" for any table below.
---   • User ownership is enforced two ways:
---       1. Server derives user_id from the session — never trusts input.
---       2. Composite foreign keys guarantee child rows (entries, events)
---          share a user_id with their parent tracker at the DB level.
+--   • User ownership relies on two complementary mechanisms — read this
+--     carefully, they do different jobs:
+--       1. AUTHORIZATION (which rows a request may touch): the server
+--          derives user_id from the authenticated session and includes an
+--          explicit `where user_id = $authenticated_user` predicate in
+--          every read/update/delete. The pooled `postgres` role we connect
+--          as has BYPASSRLS, so RLS is NOT the boundary here — those
+--          per-query predicates are. A missing predicate would be a bug.
+--       2. RELATIONAL CONSISTENCY (data integrity, not authorization):
+--          composite foreign keys `(tracker_id, user_id) → trackers(id,
+--          user_id)` guarantee a child row (entry, event) always shares a
+--          user_id with its parent tracker at the DB level. This prevents
+--          orphan rows and prevents a bug in the app from linking one
+--          user's entry to another user's tracker, but it does not
+--          replace (1) — the query still has to filter by user_id to
+--          decide the row is fetchable in the first place.
 --   • Milestone events are uniquely keyed on (tracker, percent, target).
 --     Extending a target creates a fresh "50% reached" event because the
 --     targetAtTime component changes — the old milestone remains as
