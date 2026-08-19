@@ -182,9 +182,15 @@ export default function TrackerDetailPage() {
       </header>
 
       <section className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{tracker.name}</h1>
+        <h1 className="max-w-full break-words px-4 text-2xl font-semibold tracking-tight">
+          {tracker.name}
+        </h1>
         {tracker.arabicText && (
-          <p dir="rtl" className="text-2xl text-muted-foreground/90">
+          <p
+            lang="ar"
+            dir="rtl"
+            className="max-w-md break-words px-4 text-2xl text-muted-foreground/90"
+          >
             {tracker.arabicText}
           </p>
         )}

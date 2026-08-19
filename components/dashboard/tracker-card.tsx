@@ -61,7 +61,7 @@ export function TrackerCard({
           <div className="flex items-center gap-2">
             <Link
               href={`/app/tracker/${tracker.id}`}
-              className="truncate text-base font-semibold tracking-tight text-foreground hover:underline"
+              className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-foreground hover:underline"
             >
               {tracker.name}
             </Link>
@@ -78,7 +78,7 @@ export function TrackerCard({
             )}
           </div>
           {tracker.arabicText && (
-            <p dir="rtl" className="mt-1 text-lg text-muted-foreground/90">
+            <p lang="ar" dir="rtl" className="mt-1 text-lg text-muted-foreground/90">
               {tracker.arabicText}
             </p>
           )}

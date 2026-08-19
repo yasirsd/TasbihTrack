@@ -137,6 +137,7 @@ export function EditTrackerSheet({
             <Label htmlFor="earabic">Arabic text</Label>
             <Input
               id="earabic"
+              lang="ar"
               dir="rtl"
               value={arabic}
               onChange={(e) => setArabic(e.target.value)}
