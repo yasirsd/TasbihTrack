@@ -40,17 +40,24 @@ export const SheetContent = React.forwardRef<
     <SheetOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-sheet-content=""
       className={cn(
         "fixed z-50 flex flex-col border border-border/60 bg-card shadow-2xl outline-none",
         side === "bottom" &&
-          // Keyboard-safe: sheet caps at 90dvh so the on-screen keyboard can never
-          // fully cover it. Content scrolls inside; the drag handle + close stay
-          // pinned at the top so they never fall behind the keyboard.
-          "inset-x-0 bottom-0 max-h-[90dvh] rounded-t-[32px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom sm:mx-auto sm:max-w-lg sm:rounded-3xl sm:bottom-6 sm:inset-x-6",
+          // Keyboard-safe: sheet height driven by --sheet-max-h (set by
+          // useKeyboardViewport on the <html> root — see lib/keyboard).
+          // Falls back to 90dvh when the hook hasn't measured yet or JS
+          // is disabled. Content scrolls inside; close stays pinned above.
+          "inset-x-0 bottom-0 rounded-t-[32px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom sm:mx-auto sm:max-w-lg sm:rounded-3xl sm:bottom-6 sm:inset-x-6",
         side === "right" &&
           "inset-y-0 right-0 h-full w-80 rounded-l-3xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
         className,
       )}
+      style={
+        side === "bottom"
+          ? { maxHeight: "var(--sheet-max-h, 90dvh)" }
+          : undefined
+      }
       {...props}
     >
       <div

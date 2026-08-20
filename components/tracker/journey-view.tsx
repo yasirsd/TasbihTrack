@@ -40,10 +40,10 @@ export function JourneyView({ tracker }: { tracker: Tracker }) {
   }, [tracker.id]);
 
   if (error) return <p className="text-sm text-muted-foreground">{error}</p>;
-  if (!events) return <div className="h-24 animate-pulse rounded-2xl bg-muted/30" />;
+  if (!events) return <div className="clay-skeleton h-24 animate-pulse rounded-2xl bg-muted/30 motion-reduce:animate-none" />;
   if (events.length === 0) {
     return (
-      <p className="rounded-2xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
+      <p className="clay-card rounded-2xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
         The journey begins as soon as you log progress.
       </p>
     );
@@ -51,7 +51,14 @@ export function JourneyView({ tracker }: { tracker: Tracker }) {
 
   return (
     <ol className="relative space-y-4">
-      <div className="pointer-events-none absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-gold/40 via-crimson/30 to-transparent" />
+      {/* Standard: a thin 1-px gradient line between milestone dots.
+       * Clay repaints this into a dimensional 6-px groove via the
+       * `.journey-rail-line` scoped rule in globals.css — width, position
+       * and shadow all change only under `[data-ui-style="clay"]`. */}
+      <div
+        aria-hidden
+        className="journey-rail-line pointer-events-none absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-gold/40 via-crimson/30 to-transparent"
+      />
       {events.map((event, i) => (
         <JourneyItem key={event.id} event={event} delay={i * 0.03} />
       ))}
@@ -69,11 +76,11 @@ function JourneyItem({ event, delay }: { event: JourneyEvent; delay: number }) {
       className="relative pl-12"
     >
       <span
-        className={`absolute left-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-border/60 ${tone}`}
+        className={`clay-badge absolute left-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-border/60 ${tone}`}
       >
         <Icon className="h-4 w-4" />
       </span>
-      <div className="rounded-2xl border border-border/60 bg-card p-4">
+      <div className="clay-row rounded-2xl border border-border/60 bg-card p-4">
         <p className="text-sm font-medium">{title}</p>
         {description && (
           <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>

@@ -1,10 +1,10 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Download, HardDriveDownload, LogOut, Moon, Pencil, Shield, Sun, Trash2, Upload } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Download, HardDriveDownload, LogOut, Pencil, Shield, Sparkles, Trash2, Upload } from "lucide-react";
 import { useMigration } from "@/components/migration/migration-context";
-import { TasbihAvatar } from "@/components/avatar/tasbih-avatar";
+import { UserAvatar } from "@/components/avatar/user-avatar";
 import { EditProfileSheet } from "@/components/profile/edit-profile-sheet";
 import type { Gender } from "@/lib/data/types";
 import { useAuth } from "@/components/auth/auth-context";
@@ -16,6 +16,18 @@ import { useToast } from "@/components/ui/toast";
 import { useData } from "@/components/data/data-context";
 import { exportBackupAction, importBackupAction } from "@/lib/server/actions/backup-actions";
 import type { CloudBackupPayload } from "@/lib/server/actions/backup-schema";
+import { AppearanceSettings } from "@/components/appearance/appearance-settings";
+import { FormField } from "@/components/ui/form-field";
+import { cn } from "@/lib/utils";
+import { isV3Config } from "@/lib/avatar/config-v3";
+
+// Avatar Studio is dynamically imported so the dapvatar catalog (~1,600
+// metadata entries) never lands in the Profile route's initial JS. It
+// loads only when the user actually taps Customize Avatar.
+const AvatarStudio = dynamic(
+  () => import("@/components/avatar/avatar-studio").then((m) => m.AvatarStudio),
+  { ssr: false },
+);
 import {
   Dialog,
   DialogContent,
@@ -42,7 +54,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { reload } = useData();
-  const { theme, setTheme } = useTheme();
   const [showChangePw, setShowChangePw] = React.useState(false);
   const [showDelete, setShowDelete] = React.useState(false);
   const [pendingBackup, setPendingBackup] = React.useState<
@@ -58,7 +69,9 @@ export default function ProfilePage() {
   }, []);
 
   const [editProfileOpen, setEditProfileOpen] = React.useState(false);
+  const [avatarStudioOpen, setAvatarStudioOpen] = React.useState(false);
   const profile = session?.user.profile;
+  const v3Config = isV3Config(profile?.avatar) ? profile.avatar : null;
   const displayName =
     profile?.firstName && profile?.lastName
       ? `${profile.firstName} ${profile.lastName}`
@@ -110,11 +123,12 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col items-center gap-3 pt-2 text-center">
-        <TasbihAvatar
+        <UserAvatar
           config={profile?.avatar ?? null}
-          gender={profile?.gender ?? null}
-          size={96}
+          size={112}
           alt="Your profile avatar"
+          loading="eager"
+          className="rounded-full ring-2 ring-border/60 ring-offset-2 ring-offset-background"
         />
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{displayName}</h1>
@@ -122,13 +136,29 @@ export default function ProfilePage() {
             @{session?.user.username}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setEditProfileOpen(true)}
-        >
-          <Pencil className="h-3.5 w-3.5" /> Edit profile
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {profile?.gender === "male" || profile?.gender === "female" ? (
+            <Button
+              variant="crimson"
+              size="sm"
+              onClick={() => setAvatarStudioOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Customize Avatar
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditProfileOpen(true)}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit profile
+          </Button>
+        </div>
+        {profile?.gender !== "male" && profile?.gender !== "female" && (
+          <p className="max-w-xs text-center text-xs text-muted-foreground">
+            Choose Male or Female in Edit Profile to use a 1011 Avatar.
+          </p>
+        )}
       </header>
 
       <Section title="Account">
@@ -141,17 +171,7 @@ export default function ProfilePage() {
       </Section>
 
       <Section title="Appearance">
-        <div className="flex flex-wrap gap-2">
-          <ThemeChip active={theme === "system"} onClick={() => setTheme("system")}>
-            System
-          </ThemeChip>
-          <ThemeChip active={theme === "light"} onClick={() => setTheme("light")}>
-            <Sun className="h-3.5 w-3.5" /> Light
-          </ThemeChip>
-          <ThemeChip active={theme === "dark"} onClick={() => setTheme("dark")}>
-            <Moon className="h-3.5 w-3.5" /> Dark
-          </ThemeChip>
-        </div>
+        <AppearanceSettings />
       </Section>
 
       <Section title="App">
@@ -159,6 +179,44 @@ export default function ProfilePage() {
         <p className="text-xs text-muted-foreground">
           Cloud sync is on. Your data is stored securely and synchronized across your devices.
         </p>
+      </Section>
+
+      <Section title="Credits">
+        <div className="space-y-2 text-xs text-muted-foreground">
+          <p>
+            Avatar characters and expressions are rendered by{" "}
+            <a
+              href="https://github.com/joshuanwankwo/dapvatar"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              dapvatar
+            </a>{" "}
+            (MIT).
+          </p>
+          <p>
+            Memoji artwork by{" "}
+            <a
+              href="https://www.figma.com/@m031n"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Moein Rabti (@m031n)
+            </a>
+            , licensed under{" "}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              CC BY 4.0
+            </a>
+            . Assets are indexed and served from our own origin — no visual modifications.
+          </p>
+        </div>
       </Section>
 
       <Section title="Data">
@@ -199,7 +257,7 @@ export default function ProfilePage() {
         )}
       </Section>
 
-      <Section title="Account Management">
+      <Section title="Account Management" variant="danger">
         <Button variant="outline" className="text-crimson" onClick={() => setShowDelete(true)}>
           <Trash2 className="h-4 w-4" /> Delete Account
         </Button>
@@ -216,6 +274,14 @@ export default function ProfilePage() {
         onCancel={() => setPendingBackup(null)}
         onConfirm={confirmRestore}
       />
+      {avatarStudioOpen && (
+        <AvatarStudio
+          open={avatarStudioOpen}
+          onOpenChange={setAvatarStudioOpen}
+          initialConfig={v3Config}
+          gender={(profile?.gender ?? null) as Gender | null}
+        />
+      )}
       <EditProfileSheet
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
@@ -230,41 +296,46 @@ export default function ProfilePage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  variant = "default",
+  children,
+}: {
+  title: string;
+  /**
+   * "default" — participates in the Clay system via `.clay-card`.
+   * "danger"  — deliberately opts OUT of Clay so the delete-account
+   *             region reads as a serious/destructive area even under
+   *             Playful Clay UI (see PROMPT 5.1 §1). Standard mode is
+   *             unaffected either way.
+   */
+  variant?: "default" | "danger";
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <h2 className="mb-2 px-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <h2
+        className={cn(
+          "mb-2 px-4 text-[11px] font-medium uppercase tracking-[0.18em]",
+          variant === "danger" ? "text-destructive" : "text-muted-foreground",
+        )}
+      >
         {title}
       </h2>
-      <div className="space-y-3 rounded-3xl border border-border/60 bg-card p-4">
+      <div
+        className={cn(
+          "space-y-3 rounded-3xl border p-4",
+          variant === "danger"
+            ? "border-destructive/40 bg-destructive/[0.04]"
+            : "clay-card border-border/60 bg-card",
+        )}
+      >
         {children}
       </div>
     </section>
   );
 }
 
-function ThemeChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
-        active
-          ? "border-foreground/30 bg-foreground text-background"
-          : "border-border/60 text-muted-foreground hover:bg-muted/40"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function ChangePasswordDialog({
   open,
@@ -310,16 +381,31 @@ function ChangePasswordDialog({
           <DialogDescription>Other devices will be signed out.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid gap-2">
-            <Label>Current password</Label>
-            <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>New password</Label>
-            <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} />
-          </div>
+          <FormField id="cp-current" label="Current password">
+            <Input
+              id="cp-current"
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              placeholder="Your current password"
+            />
+          </FormField>
+          <FormField id="cp-next" label="New password" hint="At least 6 characters.">
+            <Input
+              id="cp-next"
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              placeholder="Choose a new password"
+            />
+          </FormField>
           {error && (
-            <p className="rounded-xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson">
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {error}
             </p>
           )}
@@ -379,11 +465,25 @@ function DeleteAccountDialog({
             This permanently removes your account and all its progress.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-2">
-          <Label>Enter your password to confirm</Label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="space-y-3">
+          <FormField
+            id="da-password"
+            label="Enter your password to confirm"
+          >
+            <Input
+              id="da-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your current password"
+            />
+          </FormField>
           {error && (
-            <p className="rounded-xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson">
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {error}
             </p>
           )}

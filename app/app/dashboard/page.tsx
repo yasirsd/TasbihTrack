@@ -11,7 +11,7 @@ import { TrackerCard } from "@/components/dashboard/tracker-card";
 import { DashboardEmpty } from "@/components/dashboard/empty-state";
 import { Button } from "@/components/ui/button";
 import { EditTrackerSheet } from "@/components/trackers/edit-tracker-sheet";
-import { TasbihAvatar } from "@/components/avatar/tasbih-avatar";
+import { UserAvatar } from "@/components/avatar/user-avatar";
 import type { Tracker } from "@/lib/data/types";
 
 function greeting(): string {
@@ -44,12 +44,12 @@ export default function DashboardPage() {
         transition={{ duration: 0.5 }}
         className="flex items-start gap-3 px-1"
       >
-        <TasbihAvatar
+        <UserAvatar
           config={session?.user.profile?.avatar ?? null}
-          gender={session?.user.profile?.gender ?? null}
           size={48}
           ariaHidden
-          className="mt-0.5"
+          loading="eager"
+          className="mt-0.5 rounded-full"
         />
         <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">Assalamu Alaikum,</p>
@@ -77,7 +77,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="space-y-3">
             {[0, 1].map((i) => (
-              <div key={i} className="h-40 animate-pulse rounded-3xl bg-muted/40 motion-reduce:animate-none" />
+              <div key={i} className="clay-skeleton h-40 animate-pulse rounded-3xl bg-muted/40 motion-reduce:animate-none" />
             ))}
           </div>
         ) : displayed.length === 0 ? (
@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <section>
           <Link
             href="/app/archive"
-            className="group flex items-center justify-between rounded-2xl border border-border/50 bg-card/40 px-4 py-3 transition-colors hover:border-border hover:bg-card"
+            className="clay-row group flex items-center justify-between rounded-2xl border border-border/50 bg-card/40 px-4 py-3 transition-colors hover:border-border hover:bg-card"
           >
             <div>
               <p className="text-sm font-medium">Past journeys</p>

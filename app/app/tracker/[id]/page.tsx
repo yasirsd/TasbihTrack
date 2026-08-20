@@ -236,7 +236,7 @@ export default function TrackerDetailPage() {
       {!focused && todayTarget && (
         <section
           className={cn(
-            "rounded-3xl border p-5",
+            "clay-card rounded-3xl border p-5",
             todayTarget.reached
               ? "border-gold/40 bg-gradient-to-br from-gold/[0.08] via-transparent to-transparent"
               : "border-border/60 bg-card",
@@ -269,9 +269,9 @@ export default function TrackerDetailPage() {
                   / {formatNumber(todayTarget.target)}
                 </span>
               </div>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="clay-progress-track mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep transition-[width] duration-500"
+                  className="clay-progress-fill h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep transition-[width] duration-500"
                   style={{
                     width: `${
                       todayTarget.target > 0
@@ -294,7 +294,7 @@ export default function TrackerDetailPage() {
       )}
 
       {!focused && (
-        <section className="rounded-3xl border border-border/60 bg-card p-5">
+        <section className="clay-card rounded-3xl border border-border/60 bg-card p-5">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <MetricRow label="Completed" value={formatNumber(stats!.total)} />
             <MetricRow label="Remaining" value={formatNumber(stats!.remaining)} />
@@ -305,7 +305,7 @@ export default function TrackerDetailPage() {
       )}
 
       {!focused && tracker.targetDate && pace && pace.requiredPerDay !== null && (
-        <section className="rounded-3xl border border-border/60 bg-card p-5">
+        <section className="clay-card rounded-3xl border border-border/60 bg-card p-5">
           <div className="flex items-baseline justify-between">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
               Target date
@@ -339,7 +339,7 @@ export default function TrackerDetailPage() {
         <section>
           <div
             role="tablist"
-            className="mb-4 flex gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1"
+            className="clay-segmented mb-4 flex gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1"
           >
             {(
               [
@@ -353,6 +353,7 @@ export default function TrackerDetailPage() {
                 type="button"
                 role="tab"
                 aria-selected={tab === id}
+                data-active={tab === id}
                 onClick={() => setTab(id)}
                 className={cn(
                   "flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
@@ -369,13 +370,13 @@ export default function TrackerDetailPage() {
 
           {tab === "activity" && (
             grouped.length === 0 ? (
-              <p className="rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
+              <p className="clay-card rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
                 No entries yet. Add your first progress above.
               </p>
             ) : (
               <div className="space-y-4">
                 {grouped.map((group) => (
-                  <div key={group.key} className="rounded-3xl border border-border/60 bg-card p-4">
+                  <div key={group.key} className="clay-row rounded-3xl border border-border/60 bg-card p-4">
                     <div className="mb-2 flex items-baseline justify-between">
                       <p className="text-sm font-medium">{formatRelativeDate(group.key)}</p>
                       <p className="text-xs tabular-nums text-muted-foreground">

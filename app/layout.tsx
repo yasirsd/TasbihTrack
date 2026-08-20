@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProviders } from "@/components/providers";
+import { readAppearanceCookie } from "@/lib/appearance/cookie";
+import { makePrepaintScript } from "@/lib/appearance/prepaint-script";
 
 export const metadata: Metadata = {
   title: {
@@ -44,14 +46,25 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const appearance = await readAppearanceCookie();
+  const prepaint = makePrepaintScript(appearance);
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-color-theme={appearance.colorTheme}
+      data-ui-style={appearance.uiStyle}
+    >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* Runs before hydration; picks up the appearance cookie and
+         * stamps <html> with data-color-theme / data-ui-style / .dark
+         * so returning users never see the default theme flash. */}
+        <script dangerouslySetInnerHTML={{ __html: prepaint }} />
       </head>
       <body className="font-sans antialiased">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders appearance={appearance}>{children}</AppProviders>
       </body>
     </html>
   );

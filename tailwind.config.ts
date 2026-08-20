@@ -52,15 +52,20 @@ const config: Config = {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        // The legacy `crimson`/`gold` palettes are aliased to CSS-var-backed
+        // brand tokens (--brand-1 / --brand-2 / --brand-gold) so every
+        // Tailwind reference (`bg-crimson`, `text-gold`, etc.) picks up the
+        // currently-selected color theme automatically. See PROMPT 5B §68:
+        // Standard mode must respond to all five color themes.
         crimson: {
-          DEFAULT: "#EF233C",
-          soft: "#F45A6E",
-          deep: "#B21728",
+          DEFAULT: "hsl(var(--brand-1))",
+          soft: "hsl(var(--brand-1) / 0.6)",
+          deep: "hsl(var(--brand-2))",
         },
         gold: {
-          DEFAULT: "#FDC500",
-          soft: "#FFD84A",
-          deep: "#C39900",
+          DEFAULT: "hsl(var(--brand-gold))",
+          soft: "hsl(var(--brand-gold) / 0.75)",
+          deep: "hsl(var(--brand-gold) / 0.85)",
         },
       },
       borderRadius: {

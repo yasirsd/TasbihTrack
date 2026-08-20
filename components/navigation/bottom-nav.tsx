@@ -29,7 +29,7 @@ export function BottomNav({ onAdd }: { onAdd?: () => void }) {
       aria-label="Primary"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden"
     >
-      <div className="glass-nav pointer-events-auto flex w-full max-w-md items-center justify-between gap-1 rounded-full px-2 py-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)]">
+      <div className="glass-nav app-bottom-nav pointer-events-auto flex w-full max-w-md items-center justify-between gap-1 rounded-full px-2 py-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)]">
         {items.slice(0, 2).map((item) => (
           <NavItem key={item.href} item={item} active={pathname.startsWith(item.href)} />
         ))}

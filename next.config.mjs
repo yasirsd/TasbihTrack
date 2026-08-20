@@ -45,6 +45,17 @@ const nextConfig = {
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
+      {
+        /* 1011 curated avatar PNGs — versioned URL, immutable content.
+         * Safe to hand a one-year immutable cache: bumping the asset
+         * set version (see lib/avatar/manifest.ts AVATAR_ASSET_SET_VERSION)
+         * changes the URL segment so old assets stop being referenced
+         * and new ones fetch fresh. */
+        source: "/avatar-assets/:version/:character/:file",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

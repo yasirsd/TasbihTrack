@@ -9,9 +9,10 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint:sql": "node scripts/lint-sql.mjs supabase/migrations/0001_init.sql && node scripts/lint-sql.mjs supabase/migrations/0002_user_profile.sql",
+    "lint:sql": "node scripts/lint-sql.mjs supabase/migrations/0001_init.sql && node scripts/lint-sql.mjs supabase/migrations/0002_user_profile.sql && node scripts/lint-sql.mjs supabase/migrations/0003_dapvatar_only.sql && node scripts/lint-sql.mjs supabase/migrations/0004_two_character_avatar.sql",
     "db:test": "node scripts/test-db.mjs",
-    "avatars:scan": "node scripts/scan-avatar-assets.mjs"
+    "avatars:verify": "node scripts/verify-1011-avatar-assets.mjs",
+    "prebuild": "node scripts/verify-1011-avatar-assets.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

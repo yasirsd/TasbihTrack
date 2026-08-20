@@ -5,7 +5,7 @@ import { LogoMark } from "@/components/brand/logo";
 
 export function DashboardEmpty({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-3xl border border-border/60 bg-card p-8 text-center shadow-sm">
+    <div className="clay-card mx-auto flex max-w-md flex-col items-center gap-4 rounded-3xl border border-border/60 bg-card p-8 text-center shadow-sm">
       <LogoMark size={64} className="opacity-90" />
       <div className="space-y-1">
         <h2 className="text-xl font-semibold">Start with an intention</h2>

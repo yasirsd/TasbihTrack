@@ -14,7 +14,7 @@ export default function DashboardLoading() {
         <Skeleton className="h-3 w-32 opacity-60" />
       </div>
 
-      <div className="space-y-3 rounded-3xl border border-border/60 bg-card p-6">
+      <div className="clay-card space-y-3 rounded-3xl border border-border/60 bg-card p-6">
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-12 w-40" />
         <Skeleton className="h-3 w-48 opacity-60" />
@@ -31,7 +31,7 @@ export default function DashboardLoading() {
 
 function TrackerCardSkeleton() {
   return (
-    <div className="space-y-4 rounded-3xl border border-border/60 bg-card p-5">
+    <div className="clay-card space-y-4 rounded-3xl border border-border/60 bg-card p-5">
       <div className="flex items-center justify-between">
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-6 w-6 rounded-full" />

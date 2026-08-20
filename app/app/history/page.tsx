@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const TasbihCalendar = dynamic(
   () => import("@/components/calendar/tasbih-calendar").then((m) => m.TasbihCalendar),
-  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-2xl bg-muted/30" /> },
+  { ssr: false, loading: () => <div className="clay-skeleton h-64 animate-pulse rounded-2xl bg-muted/30 motion-reduce:animate-none" /> },
 );
 
 type View = "timeline" | "calendar";
@@ -39,7 +39,7 @@ export default function HistoryPage() {
         </p>
       </header>
 
-      <div className="flex items-center gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1 text-xs">
+      <div className="clay-segmented flex items-center gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1 text-xs">
         {(
           [
             ["timeline", "Timeline"],
@@ -82,7 +82,7 @@ export default function HistoryPage() {
       {view === "calendar" ? (
         <TasbihCalendar trackerId={filter === "all" ? undefined : filter} />
       ) : groups.length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card p-8 text-center">
+        <div className="clay-card rounded-3xl border border-border/60 bg-card p-8 text-center">
           <p className="text-base font-medium">No progress recorded yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             When you add progress, it will appear here.
@@ -98,7 +98,7 @@ export default function HistoryPage() {
                   +{formatNumber(g.total)}
                 </p>
               </div>
-              <div className="divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
+              <div className="clay-card divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
                 {g.entries.map((e) => (
                   <EntryItem key={e.id} entry={e} tracker={trackerMap.get(e.trackerId)} />
                 ))}

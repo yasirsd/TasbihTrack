@@ -79,7 +79,7 @@ export function CalendarDayDetails({ dateKey, entries, trackers, variant }: DayD
       ) : groups ? (
         <div className="space-y-3">
           {groups.map((g) => (
-            <div key={g.tracker?.id ?? "unknown"} className="rounded-2xl border border-border/60 bg-card/60 p-3">
+            <div key={g.tracker?.id ?? "unknown"} className="clay-row rounded-2xl border border-border/60 bg-card/60 p-3">
               <div className="mb-1 flex items-baseline justify-between px-1">
                 <p className="text-sm font-medium">{g.tracker?.name ?? "Unknown goal"}</p>
                 <p className="text-xs tabular-nums text-muted-foreground">
@@ -95,7 +95,7 @@ export function CalendarDayDetails({ dateKey, entries, trackers, variant }: DayD
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-2">
+        <div className="clay-row rounded-2xl border border-border/60 bg-card/60 p-2">
           {dayEntries.map((e) => (
             <EntryItem key={e.id} entry={e} tracker={trackerMap.get(e.trackerId)} />
           ))}

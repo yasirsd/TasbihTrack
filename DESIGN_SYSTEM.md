@@ -5,21 +5,68 @@ than introducing one-off `rounded-[…]`, `p-[…]`, arbitrary opacities, or
 new colors. Deviations are OK when there's a clear reason — the point of
 the doc is that they should be conscious, not accidental.
 
+## Appearance engine (Phase 5)
+
+Three orthogonal presentation dimensions stamped on `<html>`:
+
+- `data-color-theme` — `original` / `ruby` / `emerald` / `violet` / `sunset`
+- `data-ui-style` — `standard` / `clay`
+- `class="dark"` — managed by next-themes; color mode is `system` / `light` / `dark`
+
+Feature components consume semantic CSS variables (`--background`,
+`--brand-1`, `--clay-primary`, etc.) and NEVER branch on the theme name.
+Every theme is defined once in `app/globals.css` under its
+`:root[data-color-theme="…"]` block.
+
 ## Colors
 
-Brand accents (used sparingly, never as full-screen washes):
+Semantic brand tokens (theme-aware — resolve to the currently-selected
+color theme's palette):
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| Crimson | `#EF233C` | Primary CTA, active state, key emphasis |
-| Crimson-deep | `#B21728` | Gradient partner for buttons/completed states |
-| Gold | `#FDC500` | Milestones, completed goals, Today reached |
-| Gold-soft | `#FFD84A` | Celebration surfaces, subtle emphasis |
+| Token | Purpose |
+| --- | --- |
+| `--brand-1` | Primary CTA, active state, key emphasis |
+| `--brand-2` | Gradient partner (deep) for buttons / completed states |
+| `--brand-gold` | Milestones, completed goals, Today reached |
 
-Everything else uses the semantic HSL tokens defined in
-`app/globals.css` (`background`, `foreground`, `muted`, `card`,
-`border`, `ring`, `destructive`, `success`). Never hard-code arbitrary
-neutrals.
+Legacy Tailwind classes `bg-crimson` / `text-gold-deep` etc. are aliased
+in `tailwind.config.ts` to `hsl(var(--brand-*))` so pre-existing code
+retints automatically with the color theme.
+
+Clay-specific tokens (also per-theme):
+`--clay-bg` / `--clay-surface` / `--clay-surface-alt` / `--clay-inset` /
+`--clay-primary` / `--clay-primary-2` / `--clay-accent` /
+`--clay-highlight` / `--clay-shadow` / `--clay-ring`.
+
+Confetti particle colors are the ONE exception — canvas-confetti's worker
+cannot resolve CSS variables, so hex arrays per theme live in
+`lib/appearance/confetti-palettes.ts`. Update them alongside the CSS
+tokens.
+
+Everything else uses semantic HSL tokens (`background`, `foreground`,
+`muted`, `card`, `border`, `ring`, `destructive`, `success`,
+`placeholder`). Never hard-code arbitrary neutrals.
+
+## Clay primitives (scoped to `[data-ui-style="clay"]`)
+
+The following classes are safe to apply UNCONDITIONALLY — their styles
+only fire under Clay mode:
+
+- `.clay-btn` (+ variant modifiers `.clay-btn-primary` / `-outline` / `-ghost`) — Button primitive already applies these
+- `.clay-input` — Input + Textarea already apply this; inset cavity look
+- `.clay-card` — repaints a card surface as a puffy Clay slab
+- `.clay-row` — dense list-item Clay surface
+- `.clay-metric` — small metric slab
+- `.clay-well` — inset stat cavity
+- `.clay-chip` — puffy chip
+- `.clay-badge` (+ `.clay-badge-gold`) — dimensional badge (Journey / milestones)
+- `.clay-segmented` — segmented control tray (auto-triggers raised selected pill via `data-active="true"`)
+- `.clay-progress-track` / `.clay-progress-fill` — thick tube progress
+- `.clay-day` — calendar day tile (consumes `data-selected` / `data-today`)
+- `.clay-skeleton` — Clay-appropriate loading pulse
+- `.clay-pill` — offline/status pill
+- `.clay-rail` — vertical journey rail
+- `.app-bottom-nav` — Clay repaint of the bottom nav
 
 ## Radius
 
@@ -99,3 +146,54 @@ Every surface that renders Arabic must set BOTH:
 
 `dir="rtl"` alone is insufficient — screen readers use `lang` to pick the
 correct voice/pronunciation. Don't apply RTL to surrounding English UI.
+
+## Form fields — global placeholder policy
+
+Every editable field renders through `<FormField label="…">` (see
+`components/ui/form-field.tsx`). Rules:
+
+- **Labels always persist** above the control — no placeholder-as-label.
+- **Placeholders are example text only** using the weak `--placeholder`
+  token, formatted `e.g. Durood Shareef` where practical.
+- **No fake pre-populated `value` / `defaultValue`.** Examples belong in
+  the placeholder / hint.
+- `hint` is used for helper copy (e.g. target-amount readout).
+- `error` renders an inline alert; `aria-describedby` / `aria-invalid`
+  are wired automatically.
+
+## Mobile keyboard architecture
+
+Long forms mount `useEnsureFocusVisible(scrollRootRef)` (see
+`lib/keyboard/use-keyboard-viewport.ts`). One module-level singleton
+listens to `window.visualViewport.resize` and writes `--sheet-max-h` on
+`<html>`; Sheet reads that variable. When a text control gets focus and
+the visual viewport shrinks (keyboard opens), the focused field is
+`scrollIntoView({ block: "center" })`-ed after a rAF.
+
+Notes on why this is needed:
+
+- Mobile virtual keyboards commonly resize/overlay the visual viewport
+  independently of the page layout — CSS viewport units (`vh`, `dvh`)
+  may not represent the actually usable area during keyboard display,
+  particularly on iOS Safari.
+- `window.visualViewport` is therefore used as an *enhancement* on top
+  of the CSS `dvh` fallback. WebKit timing / offset quirks around focus
+  and keyboard reveal remain possible; real-device verification is the
+  final source of truth.
+- No random `setTimeout` waits; only actual viewport resize / focus
+  events.
+
+## Appearance account-switch precedence
+
+- **Sign-in**: server preference wins. Whatever the signed-in user has
+  saved in `preferences.appearance` overwrites the local browser state
+  and cookie.
+- **New account / never-saved appearance**: local browser preference at
+  sign-in becomes the account's stored default (persisted async).
+- **Sign-out**: local appearance stays as-is. Cookie is not cleared, so
+  the same browser sees the same look on the Sign In screen. No write
+  back to the departed account.
+- **Save failure**: local change is authoritative — the DOM + cookie
+  are already updated. Server persist is fire-and-forget and logs on
+  failure; no retry loop. A subsequent successful `updatePreferences`
+  eventually catches the server up.

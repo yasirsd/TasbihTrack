@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     <div
       aria-hidden
       className={cn(
-        "animate-pulse motion-reduce:animate-none rounded-2xl bg-muted/60",
+        "clay-skeleton animate-pulse motion-reduce:animate-none rounded-2xl bg-muted/60",
         className,
       )}
       {...props}

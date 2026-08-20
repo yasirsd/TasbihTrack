@@ -40,13 +40,13 @@ export default function InsightsPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">Your journey, at a glance.</p>
       </header>
 
-      <section className="grid grid-cols-3 divide-x divide-border/40 rounded-3xl border border-border/60 bg-card">
+      <section className="clay-card grid grid-cols-3 divide-x divide-border/40 rounded-3xl border border-border/60 bg-card">
         <Stat label="Today" value={formatNumber(todayTotal)} />
         <Stat label="Last 7 days" value={formatNumber(weekTotal)} />
         <Stat label="All time" value={formatCompact(allTime)} />
       </section>
 
-      <section className="rounded-3xl border border-border/60 bg-card p-5">
+      <section className="clay-card rounded-3xl border border-border/60 bg-card p-5">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Last 7 days
@@ -89,7 +89,7 @@ export default function InsightsPage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/60 bg-card p-4">
+        <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">This week vs last</p>
           <p className="mt-1 text-lg font-semibold tabular-nums">
             {formatNumber(weekly.thisWeek)} <span className="text-sm text-muted-foreground">vs {formatNumber(weekly.lastWeek)}</span>
@@ -102,7 +102,7 @@ export default function InsightsPage() {
           )}
         </div>
         {showStreak && (
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
+          <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Current streak</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {streak} {streak === 1 ? "day" : "days"}
@@ -117,7 +117,7 @@ export default function InsightsPage() {
           Goal Progress
         </h2>
         {activeTrackers.length === 0 ? (
-          <div className="rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
+          <div className="clay-card rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
             Your insights will appear as you begin logging progress.
           </div>
         ) : (
@@ -125,7 +125,7 @@ export default function InsightsPage() {
             {activeTrackers.map((t) => {
               const s = computeTrackerStats(t, entries);
               return (
-                <div key={t.id} className="rounded-2xl border border-border/60 bg-card p-4">
+                <div key={t.id} className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{t.name}</p>
@@ -153,7 +153,7 @@ export default function InsightsPage() {
       {(bestGoal || bestDay) && (
         <section className="grid gap-3 sm:grid-cols-2">
           {bestGoal && (
-            <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Most active goal
               </p>
@@ -164,7 +164,7 @@ export default function InsightsPage() {
             </div>
           )}
           {bestDay && (
-            <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Personal best
               </p>

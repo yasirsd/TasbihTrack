@@ -165,7 +165,7 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">
+    <li className="clay-row flex items-start gap-3 rounded-2xl border border-border/60 bg-card/60 p-3">
       <span
         className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-crimson/10 text-crimson"
         aria-hidden

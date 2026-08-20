@@ -12,7 +12,7 @@ export default function ArchiveLoading() {
       </div>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-3xl border border-border/60 bg-card p-4">
+          <div key={i} className="clay-row rounded-3xl border border-border/60 bg-card p-4">
             <Skeleton className="h-5 w-40" />
             <Skeleton className="mt-2 h-3 w-32 opacity-60" />
           </div>

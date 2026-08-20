@@ -184,16 +184,20 @@ function TasbihDayButton({
     <button
       {...buttonProps}
       aria-label={label}
+      data-selected={isSelected ? "true" : undefined}
+      data-today={isToday ? "true" : undefined}
       className={cn(
-        // Base cell — no heavy border on default state
-        "group relative mx-auto flex h-10 w-10 flex-col items-center justify-center rounded-full text-[13px] font-medium leading-none transition-[background,color,box-shadow]",
+        // Base cell — no heavy border on default state. Also carries
+        // .clay-day so Clay mode repaints it as an inset/raised tile
+        // (styles scoped to [data-ui-style="clay"] in globals.css).
+        "clay-day group relative mx-auto flex h-10 w-10 flex-col items-center justify-center rounded-full text-[13px] font-medium leading-none transition-[background,color,box-shadow]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "hover:bg-muted/60",
         // Today: subtle gold ring, not selected styling
         isToday && !isSelected && "ring-1 ring-gold/60",
         // Selected: crimson filled surface with clear contrast
         isSelected &&
-          "bg-gradient-to-br from-crimson to-crimson-deep text-white shadow-[0_6px_18px_-8px_hsl(354_88%_54%/0.55)] hover:brightness-105",
+          "bg-gradient-to-br from-crimson to-crimson-deep text-white shadow-[0_6px_18px_-8px_hsl(var(--brand-1)/0.55)] hover:brightness-105",
         // Outside days: muted, non-emphasized but still interactive for month spillover
         isOutside && "text-muted-foreground/40 hover:bg-transparent",
         className,

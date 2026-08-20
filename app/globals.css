@@ -2,8 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =============================================================================
+ * APPEARANCE TOKENS
+ *
+ * Three orthogonal presentation dimensions (see PROMPT 5B):
+ *   • data-color-theme  → "original" | "ruby" | "emerald" | "violet" | "sunset"
+ *   • data-ui-style     → "standard" | "clay"
+ *   • class="dark"      → color mode (managed by next-themes)
+ *
+ * Feature components consume semantic tokens (--background, --primary,
+ * --card, etc.) and NEVER branch on the theme name. Same file for every
+ * combination — no per-theme stylesheet copies.
+ *
+ * Each theme block defines:
+ *   • the semantic palette for light + dark
+ *   • Clay-specific tokens (--clay-*)
+ *   • a `--brand-accent` for gradient buttons (crimson / emerald / etc.)
+ *
+ * All colors are HSL triplets (no comma, so `hsl(var(--x) / 0.5)` works).
+ * Contrast has been eyeballed against WCAG AA at text sizes; the Clay
+ * palettes lean pastel so text always renders in --foreground, which is
+ * kept near-black in light and near-white in dark to stay legible.
+ * ========================================================================== */
+
 @layer base {
-  :root {
+  /* ------------------------------------------------------------------------ */
+  /* Original — Crimson + Gold — LIGHT (also the default palette)             */
+  /* ------------------------------------------------------------------------ */
+  :root,
+  :root[data-color-theme="original"] {
     --background: 40 20% 97%;
     --foreground: 220 15% 12%;
     --card: 0 0% 100%;
@@ -16,6 +43,7 @@
     --secondary-foreground: 220 15% 12%;
     --muted: 40 10% 92%;
     --muted-foreground: 220 8% 42%;
+    --placeholder: 220 8% 62%;
     --accent: 40 10% 92%;
     --accent-foreground: 220 15% 12%;
     --destructive: 354 88% 54%;
@@ -25,12 +53,27 @@
     --border: 220 10% 88%;
     --input: 220 10% 88%;
     --ring: 354 88% 54%;
+    --brand-1: 354 88% 54%;   /* Crimson */
+    --brand-2: 354 76% 40%;   /* Crimson-deep */
+    --brand-gold: 48 100% 50%;
+    /* Clay tokens — deliberately warm/pastel */
+    --clay-bg: 36 42% 94%;
+    --clay-surface: 0 0% 100%;
+    --clay-surface-alt: 36 32% 90%;
+    --clay-inset: 36 22% 86%;
+    --clay-primary: 354 82% 62%;
+    --clay-primary-2: 354 76% 50%;
+    --clay-accent: 48 100% 62%;
+    --clay-highlight: 0 0% 100%;
+    --clay-shadow: 20 40% 30%;
+    --clay-ring: 354 88% 54%;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-
-  .dark {
+  .dark:root,
+  .dark[data-color-theme="original"],
+  :root[data-color-theme="original"].dark {
     --background: 240 6% 6%;
     --foreground: 40 15% 96%;
     --card: 240 6% 8%;
@@ -43,6 +86,7 @@
     --secondary-foreground: 40 15% 96%;
     --muted: 240 5% 14%;
     --muted-foreground: 240 5% 65%;
+    --placeholder: 240 5% 45%;
     --accent: 240 5% 14%;
     --accent-foreground: 40 15% 96%;
     --destructive: 354 88% 54%;
@@ -52,6 +96,335 @@
     --border: 240 5% 16%;
     --input: 240 5% 20%;
     --ring: 354 88% 54%;
+    --brand-1: 354 88% 60%;
+    --brand-2: 354 76% 46%;
+    --brand-gold: 48 100% 56%;
+    --clay-bg: 240 8% 10%;
+    --clay-surface: 240 6% 14%;
+    --clay-surface-alt: 240 6% 12%;
+    --clay-inset: 240 8% 8%;
+    --clay-primary: 354 86% 62%;
+    --clay-primary-2: 354 76% 50%;
+    --clay-accent: 48 92% 60%;
+    --clay-highlight: 40 15% 96%;
+    --clay-shadow: 240 30% 4%;
+    --clay-ring: 354 88% 60%;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Ruby Bloom — deep ruby, warm pink, blush                                 */
+  /* ------------------------------------------------------------------------ */
+  :root[data-color-theme="ruby"] {
+    --background: 350 40% 97%;
+    --foreground: 340 30% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 30% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 30% 14%;
+    --primary: 340 76% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 40% 92%;
+    --secondary-foreground: 340 30% 20%;
+    --muted: 350 30% 92%;
+    --muted-foreground: 340 12% 42%;
+    --placeholder: 340 12% 62%;
+    --accent: 350 40% 92%;
+    --accent-foreground: 340 30% 14%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 340 20% 88%;
+    --input: 340 20% 88%;
+    --ring: 340 76% 52%;
+    --brand-1: 340 80% 52%;
+    --brand-2: 340 76% 36%;
+    --brand-gold: 22 90% 58%;
+    --clay-bg: 350 60% 94%;
+    --clay-surface: 0 0% 100%;
+    --clay-surface-alt: 350 50% 90%;
+    --clay-inset: 340 40% 86%;
+    --clay-primary: 340 82% 62%;
+    --clay-primary-2: 340 74% 48%;
+    --clay-accent: 18 92% 68%;
+    --clay-highlight: 350 100% 98%;
+    --clay-shadow: 340 60% 28%;
+    --clay-ring: 340 82% 52%;
+  }
+  .dark[data-color-theme="ruby"],
+  :root[data-color-theme="ruby"].dark {
+    --background: 340 20% 9%;
+    --foreground: 350 30% 96%;
+    --card: 340 20% 12%;
+    --card-foreground: 350 30% 96%;
+    --popover: 340 20% 12%;
+    --popover-foreground: 350 30% 96%;
+    --primary: 340 78% 62%;
+    --primary-foreground: 340 20% 9%;
+    --secondary: 340 15% 18%;
+    --secondary-foreground: 350 30% 96%;
+    --muted: 340 15% 18%;
+    --muted-foreground: 340 10% 65%;
+    --placeholder: 340 10% 45%;
+    --accent: 340 15% 18%;
+    --accent-foreground: 350 30% 96%;
+    --destructive: 354 88% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 55%;
+    --success-foreground: 240 6% 6%;
+    --border: 340 15% 20%;
+    --input: 340 15% 22%;
+    --ring: 340 78% 62%;
+    --brand-1: 340 84% 62%;
+    --brand-2: 340 78% 46%;
+    --brand-gold: 22 92% 60%;
+    --clay-bg: 340 25% 12%;
+    --clay-surface: 340 22% 16%;
+    --clay-surface-alt: 340 22% 14%;
+    --clay-inset: 340 30% 8%;
+    --clay-primary: 340 84% 64%;
+    --clay-primary-2: 340 78% 48%;
+    --clay-accent: 22 92% 62%;
+    --clay-highlight: 350 30% 96%;
+    --clay-shadow: 340 60% 4%;
+    --clay-ring: 340 82% 62%;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Emerald Garden — rich emerald, mint, sage                                */
+  /* ------------------------------------------------------------------------ */
+  :root[data-color-theme="emerald"] {
+    --background: 150 30% 97%;
+    --foreground: 165 35% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 165 35% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 165 35% 12%;
+    --primary: 156 70% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 30% 92%;
+    --secondary-foreground: 165 35% 20%;
+    --muted: 150 25% 92%;
+    --muted-foreground: 160 12% 40%;
+    --placeholder: 160 12% 60%;
+    --accent: 150 30% 92%;
+    --accent-foreground: 165 35% 12%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 155 20% 86%;
+    --input: 155 20% 86%;
+    --ring: 156 70% 40%;
+    --brand-1: 156 72% 38%;
+    --brand-2: 168 76% 26%;
+    --brand-gold: 42 88% 52%;
+    --clay-bg: 145 45% 94%;
+    --clay-surface: 0 0% 100%;
+    --clay-surface-alt: 145 40% 90%;
+    --clay-inset: 148 30% 86%;
+    --clay-primary: 156 60% 48%;
+    --clay-primary-2: 168 68% 34%;
+    --clay-accent: 42 88% 62%;
+    --clay-highlight: 145 100% 98%;
+    --clay-shadow: 160 60% 18%;
+    --clay-ring: 156 70% 40%;
+  }
+  .dark[data-color-theme="emerald"],
+  :root[data-color-theme="emerald"].dark {
+    --background: 165 25% 8%;
+    --foreground: 145 30% 96%;
+    --card: 165 22% 11%;
+    --card-foreground: 145 30% 96%;
+    --popover: 165 22% 11%;
+    --popover-foreground: 145 30% 96%;
+    --primary: 156 60% 55%;
+    --primary-foreground: 165 25% 8%;
+    --secondary: 165 15% 16%;
+    --secondary-foreground: 145 30% 96%;
+    --muted: 165 15% 16%;
+    --muted-foreground: 155 10% 65%;
+    --placeholder: 155 10% 45%;
+    --accent: 165 15% 16%;
+    --accent-foreground: 145 30% 96%;
+    --destructive: 354 88% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 55%;
+    --success-foreground: 240 6% 6%;
+    --border: 165 15% 18%;
+    --input: 165 15% 22%;
+    --ring: 156 66% 55%;
+    --brand-1: 156 70% 55%;
+    --brand-2: 168 74% 34%;
+    --brand-gold: 42 92% 60%;
+    --clay-bg: 165 28% 10%;
+    --clay-surface: 165 22% 14%;
+    --clay-surface-alt: 165 20% 12%;
+    --clay-inset: 165 30% 7%;
+    --clay-primary: 156 66% 52%;
+    --clay-primary-2: 168 74% 34%;
+    --clay-accent: 42 92% 60%;
+    --clay-highlight: 145 30% 96%;
+    --clay-shadow: 165 60% 4%;
+    --clay-ring: 156 70% 55%;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Royal Violet                                                             */
+  /* ------------------------------------------------------------------------ */
+  :root[data-color-theme="violet"] {
+    --background: 265 30% 97%;
+    --foreground: 265 30% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 265 30% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 265 30% 14%;
+    --primary: 265 68% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 265 30% 92%;
+    --secondary-foreground: 265 30% 20%;
+    --muted: 265 25% 92%;
+    --muted-foreground: 265 12% 42%;
+    --placeholder: 265 12% 62%;
+    --accent: 265 30% 92%;
+    --accent-foreground: 265 30% 14%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 265 20% 88%;
+    --input: 265 20% 88%;
+    --ring: 265 74% 56%;
+    --brand-1: 265 74% 58%;
+    --brand-2: 275 68% 38%;
+    --brand-gold: 44 92% 58%;
+    --clay-bg: 265 45% 94%;
+    --clay-surface: 0 0% 100%;
+    --clay-surface-alt: 265 40% 90%;
+    --clay-inset: 265 30% 86%;
+    --clay-primary: 265 74% 62%;
+    --clay-primary-2: 275 72% 44%;
+    --clay-accent: 320 78% 68%;
+    --clay-highlight: 265 100% 98%;
+    --clay-shadow: 265 60% 20%;
+    --clay-ring: 265 74% 56%;
+  }
+  .dark[data-color-theme="violet"],
+  :root[data-color-theme="violet"].dark {
+    --background: 265 25% 8%;
+    --foreground: 265 20% 96%;
+    --card: 265 22% 11%;
+    --card-foreground: 265 20% 96%;
+    --popover: 265 22% 11%;
+    --popover-foreground: 265 20% 96%;
+    --primary: 270 78% 66%;
+    --primary-foreground: 265 25% 8%;
+    --secondary: 265 15% 16%;
+    --secondary-foreground: 265 20% 96%;
+    --muted: 265 15% 16%;
+    --muted-foreground: 265 10% 65%;
+    --placeholder: 265 10% 45%;
+    --accent: 265 15% 16%;
+    --accent-foreground: 265 20% 96%;
+    --destructive: 354 88% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 55%;
+    --success-foreground: 240 6% 6%;
+    --border: 265 15% 18%;
+    --input: 265 15% 22%;
+    --ring: 270 78% 66%;
+    --brand-1: 270 82% 68%;
+    --brand-2: 280 68% 44%;
+    --brand-gold: 44 92% 60%;
+    --clay-bg: 265 28% 10%;
+    --clay-surface: 265 22% 14%;
+    --clay-surface-alt: 265 20% 12%;
+    --clay-inset: 265 30% 7%;
+    --clay-primary: 270 78% 66%;
+    --clay-primary-2: 280 68% 44%;
+    --clay-accent: 320 78% 68%;
+    --clay-highlight: 265 20% 96%;
+    --clay-shadow: 265 60% 4%;
+    --clay-ring: 270 78% 66%;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Sunset — coral, warm orange, yellow                                      */
+  /* ------------------------------------------------------------------------ */
+  :root[data-color-theme="sunset"] {
+    --background: 30 55% 97%;
+    --foreground: 20 40% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 40% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 40% 14%;
+    --primary: 18 88% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 55% 92%;
+    --secondary-foreground: 20 40% 20%;
+    --muted: 30 45% 92%;
+    --muted-foreground: 20 12% 42%;
+    --placeholder: 20 12% 62%;
+    --accent: 30 55% 92%;
+    --accent-foreground: 20 40% 14%;
+    --destructive: 354 88% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 30 30% 88%;
+    --input: 30 30% 88%;
+    --ring: 18 88% 54%;
+    --brand-1: 18 88% 58%;
+    --brand-2: 8 78% 44%;
+    --brand-gold: 44 100% 56%;
+    --clay-bg: 32 70% 94%;
+    --clay-surface: 0 0% 100%;
+    --clay-surface-alt: 32 60% 90%;
+    --clay-inset: 28 40% 86%;
+    --clay-primary: 18 92% 62%;
+    --clay-primary-2: 8 82% 48%;
+    --clay-accent: 44 100% 62%;
+    --clay-highlight: 45 100% 98%;
+    --clay-shadow: 20 60% 22%;
+    --clay-ring: 18 88% 54%;
+  }
+  .dark[data-color-theme="sunset"],
+  :root[data-color-theme="sunset"].dark {
+    --background: 24 28% 8%;
+    --foreground: 32 30% 96%;
+    --card: 24 22% 11%;
+    --card-foreground: 32 30% 96%;
+    --popover: 24 22% 11%;
+    --popover-foreground: 32 30% 96%;
+    --primary: 18 90% 60%;
+    --primary-foreground: 24 28% 8%;
+    --secondary: 24 15% 16%;
+    --secondary-foreground: 32 30% 96%;
+    --muted: 24 15% 16%;
+    --muted-foreground: 24 10% 65%;
+    --placeholder: 24 10% 45%;
+    --accent: 24 15% 16%;
+    --accent-foreground: 32 30% 96%;
+    --destructive: 354 88% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 55%;
+    --success-foreground: 240 6% 6%;
+    --border: 24 15% 18%;
+    --input: 24 15% 22%;
+    --ring: 18 90% 60%;
+    --brand-1: 18 90% 62%;
+    --brand-2: 8 82% 46%;
+    --brand-gold: 44 100% 58%;
+    --clay-bg: 24 28% 10%;
+    --clay-surface: 24 22% 14%;
+    --clay-surface-alt: 24 20% 12%;
+    --clay-inset: 24 30% 7%;
+    --clay-primary: 18 90% 62%;
+    --clay-primary-2: 8 82% 46%;
+    --clay-accent: 44 100% 60%;
+    --clay-highlight: 32 30% 96%;
+    --clay-shadow: 24 60% 4%;
+    --clay-ring: 18 90% 62%;
   }
 
   * {
@@ -72,27 +445,28 @@
     overflow-x: hidden;
   }
 
-  /* Consistent numeric fonts */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
+  /* App shell background — theme-aware, uses --brand-1 so it changes with the
+   * selected color theme instead of always being crimson. */
   .app-shell {
     min-height: 100dvh;
     background:
-      radial-gradient(circle at 20% -10%, rgba(239, 35, 60, 0.10), transparent 50%),
-      radial-gradient(circle at 90% 10%, rgba(253, 197, 0, 0.08), transparent 45%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+      radial-gradient(circle at 20% -10%, hsl(var(--brand-1) / 0.10), transparent 50%),
+      radial-gradient(circle at 90% 10%, hsl(var(--brand-gold) / 0.08), transparent 45%),
+      hsl(var(--background));
   }
 
   .welcome-shell {
     min-height: 100dvh;
     background:
-      radial-gradient(circle at 30% 20%, rgba(239, 35, 60, 0.20), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(253, 197, 0, 0.16), transparent 45%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+      radial-gradient(circle at 30% 20%, hsl(var(--brand-1) / 0.20), transparent 40%),
+      radial-gradient(circle at 80% 80%, hsl(var(--brand-gold) / 0.16), transparent 45%),
+      hsl(var(--background));
   }
 
   .glass-nav {
@@ -119,6 +493,351 @@
   }
 }
 
+/* =============================================================================
+ * CLAY MODE — exaggerated Dribbble-style claymorphism (see PROMPT 5C §46).
+ *
+ * Feature components DO NOT branch on data-ui-style. Their standard
+ * classNames still apply. What Clay does is override the primitives:
+ * Sheet, Card, Button, Input, Textarea, chip, and Progress each grow
+ * puffy geometry, chunky radius, and layered directional shadow.
+ *
+ * Rules of the road for Clay:
+ *   • radius scale: 28px chip → 32px card → 40px sheet
+ *   • shadows are 2–3 layers max (ambient depth + top highlight + optional
+ *     inner brand tint). NEVER a stack of 8 blurs — they nuke scroll fps.
+ *   • press feedback is transform + shadow compress (compositor-only).
+ *   • no backdrop-filter — Clay is solid, not glass.
+ *   • motion durations stay short (160–240ms) so the material feels solid
+ *     rather than gooey.
+ * ========================================================================== */
+
+[data-ui-style="clay"] body {
+  background: hsl(var(--clay-bg));
+}
+
+[data-ui-style="clay"] .app-shell,
+[data-ui-style="clay"] .welcome-shell {
+  background:
+    radial-gradient(circle at 15% -10%, hsl(var(--clay-primary) / 0.22), transparent 55%),
+    radial-gradient(circle at 90% 10%, hsl(var(--clay-accent) / 0.18), transparent 50%),
+    hsl(var(--clay-bg));
+}
+
+/* ------- Clay surface ---------------------------------------------------- */
+.clay-surface {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-surface-alt));
+  border-radius: 32px;
+  box-shadow:
+    0 22px 40px -20px hsl(var(--clay-shadow) / 0.28),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.6);
+}
+
+/* Auto-apply the Clay surface look to standard content cards when Clay is
+ * active. Cards keep their existing className; Clay just repaints them. */
+[data-ui-style="clay"] .clay-card {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-surface-alt));
+  border-radius: 32px;
+  box-shadow:
+    0 22px 40px -22px hsl(var(--clay-shadow) / 0.28),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+
+/* ------- Clay button ----------------------------------------------------- */
+/* We keep the shadcn `button` variants — Clay overrides the material via a
+ * generic .clay-btn class the Button primitive applies UNCONDITIONALLY.
+ * The rules only take effect when <html> has data-ui-style="clay", so
+ * Standard mode is untouched. */
+[data-ui-style="clay"] .clay-btn {
+  border-radius: 28px !important;
+  box-shadow:
+    0 10px 20px -8px hsl(var(--clay-shadow) / 0.35),
+    0 4px 10px -4px hsl(var(--clay-shadow) / 0.22),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.55);
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-ui-style="clay"] .clay-btn:active {
+  transform: translateY(2px) scale(0.985);
+  box-shadow:
+    0 4px 10px -6px hsl(var(--clay-shadow) / 0.32),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.4);
+}
+[data-ui-style="clay"] .clay-btn-primary {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+  color: #fff;
+}
+[data-ui-style="clay"] .clay-btn-outline {
+  background: hsl(var(--clay-surface));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--clay-inset));
+}
+[data-ui-style="clay"] .clay-btn-ghost {
+  background: hsl(var(--clay-surface-alt));
+  color: hsl(var(--foreground));
+  box-shadow:
+    inset 0 2px 4px 0 hsl(var(--clay-shadow) / 0.10),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.6);
+}
+
+/* ------- Clay input / textarea — always look INSET (like pressed cavities) */
+[data-ui-style="clay"] .clay-input {
+  border-radius: 22px !important;
+  background: hsl(var(--clay-inset)) !important;
+  border: 1px solid transparent !important;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.16),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.5);
+  transition: box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              background 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-ui-style="clay"] .clay-input::placeholder {
+  color: hsl(var(--placeholder)) !important;
+  font-weight: 400;
+}
+[data-ui-style="clay"] .clay-input:focus-visible {
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.20),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.5),
+    0 0 0 3px hsl(var(--clay-ring) / 0.35);
+  outline: none;
+}
+
+/* ------- Clay segmented control ----------------------------------------- */
+[data-ui-style="clay"] .clay-segmented {
+  background: hsl(var(--clay-inset));
+  border-radius: 999px;
+  padding: 6px;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.16),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+[data-ui-style="clay"] .clay-segmented button {
+  border-radius: 999px;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              background 160ms;
+}
+[data-ui-style="clay"] .clay-segmented button[data-active="true"] {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+  color: #fff;
+  box-shadow:
+    0 10px 18px -8px hsl(var(--clay-shadow) / 0.35),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5);
+  transform: translateY(-1px);
+}
+
+/* ------- Clay chip (Quick Add) ------------------------------------------ */
+[data-ui-style="clay"] .clay-chip {
+  border-radius: 20px;
+  background: hsl(var(--clay-surface));
+  color: hsl(var(--foreground));
+  box-shadow:
+    0 6px 14px -6px hsl(var(--clay-shadow) / 0.28),
+    inset 0 1.5px 0 0 hsl(var(--clay-highlight) / 0.55);
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-ui-style="clay"] .clay-chip:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow:
+    0 3px 8px -5px hsl(var(--clay-shadow) / 0.28),
+    inset 0 1.5px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+
+/* ------- Clay progress -------------------------------------------------- */
+[data-ui-style="clay"] .clay-progress-track {
+  background: hsl(var(--clay-inset));
+  border-radius: 999px;
+  height: 18px;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.20),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.5);
+  overflow: hidden;
+}
+[data-ui-style="clay"] .clay-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+  box-shadow:
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5),
+    0 2px 6px -2px hsl(var(--clay-shadow) / 0.30);
+}
+
+/* ------- Clay sheet override ------------------------------------------- */
+[data-ui-style="clay"] [data-sheet-content] {
+  border-radius: 40px 40px 0 0 !important;
+  background: hsl(var(--clay-surface)) !important;
+  border-top: 1px solid hsl(var(--clay-highlight) / 0.4) !important;
+  box-shadow:
+    0 -30px 50px -18px hsl(var(--clay-shadow) / 0.35),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5) !important;
+}
+
+/* ------- Clay nav ------------------------------------------------------- */
+[data-ui-style="clay"] .app-bottom-nav {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-surface-alt));
+  border-radius: 34px;
+  box-shadow:
+    0 22px 40px -22px hsl(var(--clay-shadow) / 0.35),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.55);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ------- Clay metric slab — used by tracker detail / insights ---------- */
+[data-ui-style="clay"] .clay-metric {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-surface-alt));
+  border-radius: 24px;
+  box-shadow:
+    0 12px 22px -14px hsl(var(--clay-shadow) / 0.28),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.55);
+}
+
+/* ------- Clay inset well — small stat cavities inside metric strips ---- */
+[data-ui-style="clay"] .clay-well {
+  background: hsl(var(--clay-inset));
+  border-radius: 18px;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.14),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.5);
+  border: 1px solid transparent;
+}
+
+/* ------- Clay list row — dense scannable items (History entries) ------- */
+[data-ui-style="clay"] .clay-row {
+  background: hsl(var(--clay-surface));
+  border-radius: 20px;
+  border: 1px solid hsl(var(--clay-surface-alt));
+  box-shadow:
+    0 6px 14px -10px hsl(var(--clay-shadow) / 0.20),
+    inset 0 1.5px 0 0 hsl(var(--clay-highlight) / 0.55);
+}
+
+/* ------- Clay milestone badge — Journey / Insights --------------------- */
+[data-ui-style="clay"] .clay-badge {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+  color: #fff;
+  border-radius: 999px;
+  box-shadow:
+    0 10px 18px -8px hsl(var(--clay-shadow) / 0.35),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+[data-ui-style="clay"] .clay-badge-gold {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--brand-gold)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+}
+
+/* ------- Clay journey rail — dimensional vertical timeline ------------- */
+/* The Journey list renders a thin gradient div in Standard mode (`w-px`).
+ * Under Clay it widens to ~6px, re-centers on the 40 px badge column, and
+ * gains a subtle inset shadow so the timeline reads as one carved-in-clay
+ * groove between milestone badges. */
+[data-ui-style="clay"] .journey-rail-line {
+  width: 6px;
+  left: 17px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary) / 0.35) 0%,
+    hsl(var(--clay-primary-2) / 0.28) 60%,
+    hsl(var(--clay-primary) / 0.10) 100%
+  );
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--clay-highlight) / 0.35),
+    0 4px 8px -6px hsl(var(--clay-shadow) / 0.25);
+}
+
+/* ------- Clay calendar day tile ---------------------------------------- */
+[data-ui-style="clay"] .clay-day {
+  border-radius: 14px;
+  box-shadow: inset 0 1.5px 3px 0 hsl(var(--clay-shadow) / 0.10);
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-ui-style="clay"] .clay-day[data-selected="true"] {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-primary)) 0%,
+    hsl(var(--clay-primary-2)) 100%
+  );
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 16px -8px hsl(var(--clay-shadow) / 0.35),
+    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+[data-ui-style="clay"] .clay-day[data-today="true"]:not([data-selected="true"]) {
+  box-shadow:
+    inset 0 0 0 2px hsl(var(--brand-gold)),
+    inset 0 1.5px 3px 0 hsl(var(--clay-shadow) / 0.10);
+}
+
+/* ------- Clay skeleton — subtle opacity pulse, no shimmer -------------- */
+[data-ui-style="clay"] .clay-skeleton {
+  background: hsl(var(--clay-inset));
+  border-radius: 20px;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.14),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.4);
+  animation: clay-pulse 1.6s ease-in-out infinite;
+}
+@keyframes clay-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+/* ------- Clay offline / error status pill ------------------------------ */
+[data-ui-style="clay"] .clay-pill {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-surface-alt));
+  border-radius: 999px;
+  box-shadow:
+    0 8px 16px -10px hsl(var(--clay-shadow) / 0.28),
+    inset 0 1.5px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+
+/* ------- Autofilled inputs — WebKit paints its own yellow. Recolor so
+ * autofilled values still read as VALUES (not placeholders) in either
+ * material. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--card)) inset !important;
+  caret-color: hsl(var(--foreground)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+[data-ui-style="clay"] input:-webkit-autofill,
+[data-ui-style="clay"] input:-webkit-autofill:hover,
+[data-ui-style="clay"] input:-webkit-autofill:focus,
+[data-ui-style="clay"] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--clay-inset)) inset !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -140,15 +859,10 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Keyboard-safe focus: give text-entry form controls breathing room above
- * and below when the mobile browser scrolls them into view over the on-
- * screen keyboard. Prevents the "focused input hides behind the keyboard"
- * class of bugs on iOS Safari and Android Chrome.
- *
- * Deliberately NOT applied to <button> — a button in a scrollable list
- * shouldn't force a 96px jump on focus. (Per 4C.2B.1 §19 review.) */
+/* Keyboard-safe: below-fold breathing room when a focused control gets
+ * scrolled into view (used together with the useKeyboardViewport hook). */
 input,
 textarea,
 select {
-  scroll-margin-block: 96px;
+  scroll-margin-block: 120px;
 }

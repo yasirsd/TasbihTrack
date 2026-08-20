@@ -1,11 +1,11 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
 import { Eye, EyeOff } from "lucide-react";
 import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
+import { Segmented } from "@/components/ui/segmented";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import type { Gender } from "@/lib/data/types";
@@ -14,9 +14,22 @@ import { cn } from "@/lib/utils";
 type Mode = "signIn" | "signUp";
 
 /**
- * Sign In is the default view (§19). Create Account is reached via a
- * secondary link at the bottom, not a tab. This mirrors what returning
- * users need — they type username + password, not a full registration form.
+ * Auth surface — post-Phase-5 P0 rescue (PROMPT 5A §1–§7).
+ *
+ * The active mode is signalled two ways that agree with each other:
+ *   1. A prominent segmented control at the top: SIGN IN / CREATE ACCOUNT.
+ *      Selected option gets a raised background (Clay lifts it out of the
+ *      inset tray via .clay-segmented).
+ *   2. A distinct title/subtitle per mode (never the same copy).
+ *
+ * Every field uses <FormField label="…"> so labels ALWAYS stay visible.
+ * Placeholders are example text only ("e.g. yasir") and render in the
+ * weak --placeholder token so users cannot mistake them for a real value.
+ *
+ * No AnimatePresence swap: we keep both trees under the segmented control
+ * and simply show/hide, so switching modes is instantaneous. Removing the
+ * mode-switch animation is intentional — it was one of the "everything
+ * feels slow" contributors on real devices.
  */
 export function AuthForm({
   onModeChange,
@@ -36,40 +49,43 @@ export function AuthForm({
   const { toast } = useToast();
 
   return (
-    <div className="w-full max-w-md">
-      <AnimatePresence mode="wait" initial={false}>
+    <div className="w-full max-w-md space-y-5">
+      <Segmented<Mode>
+        ariaLabel="Sign in or create account"
+        value={mode}
+        onChange={setMode}
+        size="lg"
+        options={[
+          { value: "signIn", label: "Sign in" },
+          { value: "signUp", label: "Create account" },
+        ]}
+      />
+
+      <div className="text-center">
         {mode === "signIn" ? (
-          <motion.div
-            key="signIn"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
-          >
-            <SignInForm
-              service={service}
-              toast={toast}
-              onCreateAccount={() => setMode("signUp")}
-              router={router}
-            />
-          </motion.div>
+          <>
+            <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sign in to continue your journey.
+            </p>
+          </>
         ) : (
-          <motion.div
-            key="signUp"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
-          >
-            <SignUpForm
-              service={service}
-              toast={toast}
-              onSignIn={() => setMode("signIn")}
-              router={router}
-            />
-          </motion.div>
+          <>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Create your account
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Begin your 1011 journey.
+            </p>
+          </>
         )}
-      </AnimatePresence>
+      </div>
+
+      {mode === "signIn" ? (
+        <SignInForm service={service} toast={toast} router={router} />
+      ) : (
+        <SignUpForm service={service} toast={toast} router={router} />
+      )}
     </div>
   );
 }
@@ -84,12 +100,7 @@ interface FormShared {
   router: ReturnType<typeof useRouter>;
 }
 
-function SignInForm({
-  service,
-  toast,
-  onCreateAccount,
-  router,
-}: FormShared & { onCreateAccount: () => void }) {
+function SignInForm({ service, toast, router }: FormShared) {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(true);
@@ -115,16 +126,8 @@ function SignInForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="mb-1 text-center">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-          Sign in
-        </p>
-        <p className="mt-1 text-xl font-semibold tracking-tight">Welcome back</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="signin-username">Username</Label>
+    <form onSubmit={submit} className="space-y-4" autoComplete="on">
+      <FormField id="signin-username" label="Username">
         <Input
           id="signin-username"
           autoComplete="username"
@@ -134,30 +137,30 @@ function SignInForm({
           spellCheck={false}
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          placeholder="yasir"
+          placeholder="e.g. yasir"
           required
         />
-      </div>
+      </FormField>
 
-      <div className="space-y-2">
-        <Label htmlFor="signin-password">Password</Label>
+      <FormField id="signin-password" label="Password">
         <PasswordField
           id="signin-password"
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
           enterKeyHint="go"
+          placeholder="Your password"
           show={showPassword}
           onToggleShow={() => setShowPassword((s) => !s)}
         />
-      </div>
+      </FormField>
 
       <label className="flex select-none items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={rememberMe}
           onChange={(e) => setRememberMe(e.target.checked)}
-          className="h-4 w-4 accent-crimson"
+          className="h-4 w-4 accent-[hsl(var(--brand-1))]"
         />
         <span>Remember me on this device</span>
       </label>
@@ -165,7 +168,7 @@ function SignInForm({
       {error && (
         <div
           role="alert"
-          className="rounded-2xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson"
+          className="rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
         </div>
@@ -181,17 +184,6 @@ function SignInForm({
       >
         Sign In
       </PendingButton>
-
-      <p className="pt-2 text-center text-sm text-muted-foreground">
-        New to 1011 Tracker?{" "}
-        <button
-          type="button"
-          onClick={onCreateAccount}
-          className="font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-        >
-          Create account
-        </button>
-      </p>
     </form>
   );
 }
@@ -200,12 +192,7 @@ function SignInForm({
 // Sign Up (registration)
 // ---------------------------------------------------------------------------
 
-function SignUpForm({
-  service,
-  toast,
-  onSignIn,
-  router,
-}: FormShared & { onSignIn: () => void }) {
+function SignUpForm({ service, toast, router }: FormShared) {
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [gender, setGender] = React.useState<Gender | "">("");
@@ -249,18 +236,8 @@ function SignUpForm({
 
   return (
     <form onSubmit={submit} className="space-y-4" autoComplete="on">
-      <div className="mb-1 text-center">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-          Create account
-        </p>
-        <p className="mt-1 text-xl font-semibold tracking-tight">
-          Start your journey
-        </p>
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="reg-first">First name</Label>
+        <FormField id="reg-first" label="First name">
           <Input
             id="reg-first"
             autoComplete="given-name"
@@ -268,11 +245,11 @@ function SignUpForm({
             autoCapitalize="words"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
+            placeholder="e.g. Yasir"
             required
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="reg-last">Last name</Label>
+        </FormField>
+        <FormField id="reg-last" label="Last name" optional>
           <Input
             id="reg-last"
             autoComplete="family-name"
@@ -280,12 +257,13 @@ function SignUpForm({
             autoCapitalize="words"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
+            placeholder="e.g. Ahmed"
           />
-        </div>
+        </FormField>
       </div>
 
       <div className="space-y-2">
-        <Label>Gender</Label>
+        <p className="text-sm font-medium">Gender</p>
         <div role="radiogroup" className="flex flex-wrap gap-2">
           {(
             [
@@ -301,7 +279,7 @@ function SignUpForm({
               aria-checked={gender === value}
               onClick={() => setGender(value)}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                "rounded-full border px-3 py-1.5 text-sm transition-[background,color,transform] duration-150 touch-manipulation active:scale-[0.98]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 gender === value
                   ? "border-foreground/20 bg-foreground text-background shadow-sm"
@@ -314,8 +292,11 @@ function SignUpForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-username">Username</Label>
+      <FormField
+        id="reg-username"
+        label="Username"
+        hint="Used to sign in. 3–20 lowercase letters, numbers, or underscore."
+      >
         <Input
           id="reg-username"
           autoComplete="username"
@@ -325,31 +306,28 @@ function SignUpForm({
           spellCheck={false}
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          placeholder="yasir"
+          placeholder="e.g. yasir"
           required
         />
-        <p className="text-xs text-muted-foreground">
-          Used to sign in. 3–20 lowercase letters, numbers, or underscore.
-        </p>
-      </div>
+      </FormField>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-password">Password</Label>
+      <FormField id="reg-password" label="Password" hint="At least 6 characters.">
         <PasswordField
           id="reg-password"
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
           enterKeyHint="go"
+          placeholder="Choose a password"
           show={showPassword}
           onToggleShow={() => setShowPassword((s) => !s)}
         />
-      </div>
+      </FormField>
 
       {error && (
         <div
           role="alert"
-          className="rounded-2xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson"
+          className="rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
         </div>
@@ -365,23 +343,13 @@ function SignUpForm({
       >
         Create Account
       </PendingButton>
-
-      <p className="pt-2 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <button
-          type="button"
-          onClick={onSignIn}
-          className="font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-        >
-          Sign in
-        </button>
-      </p>
     </form>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Password field with show/hide (§34)
+// Password field with show/hide.
+// Placeholder is used as example text ONLY, using the weak --placeholder token.
 // ---------------------------------------------------------------------------
 
 function PasswordField({
@@ -390,6 +358,7 @@ function PasswordField({
   onChange,
   autoComplete,
   enterKeyHint,
+  placeholder,
   show,
   onToggleShow,
 }: {
@@ -398,6 +367,7 @@ function PasswordField({
   onChange: (v: string) => void;
   autoComplete: string;
   enterKeyHint?: "go" | "next" | "done";
+  placeholder: string;
   show: boolean;
   onToggleShow: () => void;
 }) {
@@ -410,7 +380,7 @@ function PasswordField({
         enterKeyHint={enterKeyHint}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="At least 6 characters"
+        placeholder={placeholder}
         required
         className="pr-11"
       />
@@ -418,7 +388,7 @@ function PasswordField({
         type="button"
         onClick={onToggleShow}
         aria-label={show ? "Hide password" : "Show password"}
-        className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
         tabIndex={-1}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

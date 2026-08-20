@@ -3,25 +3,27 @@ import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/ui/form-field";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
 import { todayKey } from "@/lib/date-utils";
 import { targetToWords } from "@/lib/number-words";
+import { useEnsureFocusVisible } from "@/lib/keyboard/use-keyboard-viewport";
 
 /**
- * Main-flow fields per 4C.2B §50:
- *   Goal name
- *   Target amount   ← with formatted commas + spelled-out words below
- *   Target date
- *   Description     ← promoted out of Additional Details
+ * Create Goal — Phase 5 P0 UX rescue.
  *
- * Additional Details keeps only genuinely optional metadata.
+ * Every field now uses <FormField label="…"> so labels are always visible.
+ * Placeholders are example-only ("e.g. Durood Shareef") and render in the
+ * weak --placeholder token, so nobody can mistake the example for a real
+ * value the way the previous field-with-placeholder-only design allowed.
  *
- * Draft state uses a stable client UUID minted once per open cycle (§80
- * idempotency) so rapid double-taps still produce exactly one goal.
+ * Keyboard-safe: a scoped useEnsureFocusVisible pulls the focused input
+ * into the middle of the sheet's scroll region once the visual viewport
+ * shrinks (i.e. when the mobile keyboard fully opens). No random 500ms
+ * setTimeout, no per-form viewport listener — one shared hook.
  */
 export function CreateTrackerSheet({
   open,
@@ -42,6 +44,8 @@ export function CreateTrackerSheet({
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const clientIdRef = React.useRef<string | null>(null);
+  const scrollRootRef = React.useRef<HTMLDivElement>(null);
+  useEnsureFocusVisible(scrollRootRef);
 
   const wasOpenRef = React.useRef(false);
   React.useEffect(() => {
@@ -103,144 +107,144 @@ export function CreateTrackerSheet({
   return (
     <Sheet open={open} onOpenChange={(v) => (!submitting || v) && onOpenChange(v)}>
       <SheetContent>
-        <SheetHeader>
-          <SheetTitle>New Goal</SheetTitle>
-          <SheetDescription>Start a new Dhikr intention.</SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="tname">Name</Label>
-            <Input
-              id="tname"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Durood Shareef"
-              enterKeyHint="next"
-              autoCapitalize="words"
-              autoFocus
-              disabled={submitting}
-            />
-          </div>
+        <div ref={scrollRootRef}>
+          <SheetHeader>
+            <SheetTitle>New Goal</SheetTitle>
+            <SheetDescription>Start a new Dhikr intention.</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4">
+            <FormField id="tname" label="Goal name">
+              <Input
+                id="tname"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Durood Shareef"
+                enterKeyHint="next"
+                autoCapitalize="words"
+                autoFocus
+                disabled={submitting}
+              />
+            </FormField>
 
-          <div className="grid gap-2">
-            <Label htmlFor="ttarget">Target</Label>
-            <Input
+            <FormField
               id="ttarget"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              enterKeyHint="next"
-              value={target}
-              onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="100000"
-              disabled={submitting}
-            />
-            {/* Readability aid (§54) — commas + spelled-out words below. The
-                input itself stays raw digits so the caret never jumps. */}
-            {targetReadout && (
-              <div className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2 text-sm">
-                <p className="tabular-nums text-foreground">
-                  {targetReadout.value.toLocaleString("en-US")}
-                </p>
-                <p className="text-xs text-muted-foreground">{targetReadout.words}</p>
+              label="Target amount"
+              hint={
+                targetReadout ? (
+                  <span className="flex flex-col gap-0.5">
+                    <span className="tabular-nums text-foreground">
+                      {targetReadout.value.toLocaleString("en-US")}
+                    </span>
+                    <span>{targetReadout.words}</span>
+                  </span>
+                ) : (
+                  "Enter as digits — commas and words appear below."
+                )
+              }
+            >
+              <Input
+                id="ttarget"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                enterKeyHint="next"
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 100000"
+                disabled={submitting}
+              />
+            </FormField>
+
+            <FormField
+              id="ttarget-date"
+              label="Target date"
+              optional
+              hint="Powers pace, today's target, and estimated completion."
+            >
+              <TasbihDatePicker
+                id="ttarget-date"
+                value={targetDate}
+                onChange={setTargetDate}
+                minKey={todayKey()}
+                placeholder="When would you like to complete this?"
+                disabled={submitting}
+                aria-label="Target date"
+              />
+            </FormField>
+
+            <FormField id="tdesc" label="Description" optional>
+              <Textarea
+                id="tdesc"
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Complete this over the next 3 months"
+                disabled={submitting}
+              />
+            </FormField>
+
+            <details className="group rounded-2xl border border-border/60 bg-muted/20 p-3">
+              <summary className="cursor-pointer text-sm text-muted-foreground">
+                Additional details
+              </summary>
+              <div className="mt-3 grid gap-3">
+                <FormField id="tdaily" label="Custom daily target" optional>
+                  <Input
+                    id="tdaily"
+                    inputMode="numeric"
+                    value={dailyTarget}
+                    onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="Auto if left blank"
+                    disabled={submitting}
+                  />
+                </FormField>
+                <FormField
+                  id="tstarting"
+                  label="Already completed"
+                  optional
+                  hint="Recorded as your first entry so history stays honest."
+                >
+                  <Input
+                    id="tstarting"
+                    inputMode="numeric"
+                    value={startingProgress}
+                    onChange={(e) => setStartingProgress(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="e.g. 23000"
+                    disabled={submitting}
+                  />
+                </FormField>
+                <FormField id="tarabic" label="Arabic text" optional>
+                  <Input
+                    id="tarabic"
+                    lang="ar"
+                    dir="rtl"
+                    value={arabic}
+                    onChange={(e) => setArabic(e.target.value)}
+                    placeholder="اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ"
+                    disabled={submitting}
+                  />
+                </FormField>
+              </div>
+            </details>
+
+            {error && (
+              <div
+                role="alert"
+                className="rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {error}
               </div>
             )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="ttarget-date">
-              Target date
-              <span className="ml-1 font-normal text-muted-foreground">(recommended)</span>
-            </Label>
-            <TasbihDatePicker
-              id="ttarget-date"
-              value={targetDate}
-              onChange={setTargetDate}
-              minKey={todayKey()}
-              placeholder="When would you like to complete this?"
-              disabled={submitting}
-              aria-label="Target date"
-            />
-            <p className="text-xs text-muted-foreground">
-              Powers pace, today&apos;s target, and estimated completion. You can set it later.
-            </p>
-          </div>
-
-          {/* Description promoted to the main flow (§50–§51) */}
-          <div className="grid gap-2">
-            <Label htmlFor="tdesc">Description</Label>
-            <Textarea
-              id="tdesc"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Why are you setting this goal?"
-              disabled={submitting}
-            />
-          </div>
-
-          <details className="group rounded-2xl border border-border/60 bg-muted/20 p-3">
-            <summary className="cursor-pointer text-sm text-muted-foreground">
-              Additional details
-            </summary>
-            <div className="mt-3 grid gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="tdaily">Custom daily target</Label>
-                <Input
-                  id="tdaily"
-                  inputMode="numeric"
-                  value={dailyTarget}
-                  onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
-                  placeholder="Auto if left blank"
-                  disabled={submitting}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tstarting">Already completed</Label>
-                <Input
-                  id="tstarting"
-                  inputMode="numeric"
-                  value={startingProgress}
-                  onChange={(e) => setStartingProgress(e.target.value.replace(/[^0-9]/g, ""))}
-                  placeholder="e.g. 23000"
-                  disabled={submitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Recorded as your first entry so history stays honest.
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tarabic">Arabic text</Label>
-                <Input
-                  id="tarabic"
-                  lang="ar"
-                  dir="rtl"
-                  value={arabic}
-                  onChange={(e) => setArabic(e.target.value)}
-                  placeholder="اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ"
-                  disabled={submitting}
-                />
-              </div>
-            </div>
-          </details>
-
-          {error && (
-            <div
-              role="alert"
-              className="rounded-2xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson"
+            <PendingButton
+              variant="crimson"
+              size="lg"
+              className="w-full"
+              pending={submitting}
+              pendingLabel="Creating goal…"
+              onClick={submit}
             >
-              {error}
-            </div>
-          )}
-          <PendingButton
-            variant="crimson"
-            size="lg"
-            className="w-full"
-            pending={submitting}
-            pendingLabel="Creating goal…"
-            onClick={submit}
-          >
-            Create Goal
-          </PendingButton>
+              Create Goal
+            </PendingButton>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

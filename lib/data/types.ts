@@ -2,18 +2,28 @@ export type TrackerStatus = "active" | "paused" | "completed" | "archived";
 
 export type Gender = "male" | "female" | "prefer_not_to_say";
 
-export interface AvatarConfig {
-  /** Preset key from the curated avatar set. */
-  preset: string;
-  /** Skin tone id (e.g. "s1".."s5"). */
-  skinTone?: string;
-  /** Background color id (e.g. "b1".."b6"). */
-  background?: string;
-  /** Outfit tone id (e.g. "o1".."o6") — introduced in v2. */
-  outfitTone?: string;
-  /** Headwear id: kufi | hijab | none — must be compatible with the preset. */
-  headwear?: string;
+/**
+ * v3 avatar config — Dapvatar Memoji-style rendered PNG. Two stable
+ * identifiers from the actual dapvatar 0.1.4 catalog:
+ *   • characterId (e.g. "male-karim-white")
+ *   • postureId   (e.g. "male-karim-white-1-happy")
+ * Storing both means a rename of one field cannot leave the other stale.
+ *
+ * Phase 6.1: v1/v2 SVG configs are no longer part of the application
+ * type surface. Any old blob that arrives from the DB or a backup is
+ * detected purely for MIGRATION purposes (see lib/avatar/config-v3.ts
+ * `isLegacyPresetConfig`) and replaced with a v3 default. The renderer
+ * itself never receives v1/v2 shapes.
+ */
+export interface AvatarConfigV3 {
+  version: 3;
+  engine: "dapvatar";
+  characterId: string;
+  postureId: string;
 }
+
+/** The application avatar type. All rendered avatars are v3 or null. */
+export type AvatarConfig = AvatarConfigV3;
 
 export interface PublicProfile {
   firstName: string | null;
@@ -33,6 +43,17 @@ export interface UserPreferences {
   localMigrationCompletedAt?: string;
   /** Set when the legacy-user profile-completion dialog was dismissed. */
   profileCompletionDismissedAt?: string;
+  /**
+   * Presentation preferences added in Phase 5. Three orthogonal
+   * dimensions (color theme × interface style × color mode). All fields
+   * optional — legacy users with no appearance block fall back to the
+   * defaults defined in `lib/appearance/types.ts`.
+   */
+  appearance?: {
+    colorTheme?: "original" | "ruby" | "emerald" | "violet" | "sunset";
+    uiStyle?: "standard" | "clay";
+    colorMode?: "system" | "light" | "dark";
+  };
 }
 
 export interface StoredUser {

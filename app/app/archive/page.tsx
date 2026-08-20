@@ -55,7 +55,7 @@ export default function ArchivePage() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card p-10 text-center">
+        <div className="clay-card rounded-3xl border border-border/60 bg-card p-10 text-center">
           <Award className="mx-auto h-8 w-8 text-muted-foreground/40" aria-hidden />
           <p className="mt-3 text-sm font-medium">
             {past.length === 0
@@ -69,7 +69,7 @@ export default function ArchivePage() {
           )}
         </div>
       ) : (
-        <ul className="divide-y divide-border/40 overflow-hidden rounded-3xl border border-border/60 bg-card">
+        <ul className="clay-card divide-y divide-border/40 overflow-hidden rounded-3xl border border-border/60 bg-card">
           {filtered.map((t) => {
             const s = computeTrackerStats(t, entries);
             const closedAt = t.completedAt

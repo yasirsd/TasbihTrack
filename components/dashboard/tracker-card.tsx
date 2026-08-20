@@ -52,10 +52,10 @@ export function TrackerCard({
     <motion.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="clay-card relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-crimson/5 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[hsl(var(--brand-1)/0.06)] to-transparent" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -179,12 +179,12 @@ export function TrackerCard({
         </div>
       </div>
 
-      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-muted">
+      <div className="clay-progress-track relative mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(100, stats.percent)}%` }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="clay-progress-fill h-full rounded-full bg-gradient-to-r from-[hsl(var(--brand-gold))] via-[hsl(var(--brand-1))] to-[hsl(var(--brand-2))]"
         />
       </div>
 

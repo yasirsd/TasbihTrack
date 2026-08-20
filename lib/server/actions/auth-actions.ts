@@ -20,6 +20,12 @@ import type {
 } from "@/lib/data/types";
 import { defaultAvatarFor, sanitizeAvatarConfig } from "@/lib/avatar/config";
 import {
+  avatarForGenderTransition,
+  isV3Config,
+  sanitizeAvatarConfigV3ForGender,
+} from "@/lib/avatar/config-v3";
+import type { AvatarConfigV3 } from "@/lib/data/types";
+import {
   profileUpdateSchema,
   registrationSchema,
   type AuthActionResult,
@@ -275,17 +281,57 @@ export async function updateProfileAction(raw: unknown): Promise<AuthActionResul
       fields.push(`last_name = $${i++}`);
       values.push(input.lastName.length ? input.lastName : null);
     }
+
+    // -----------------------------------------------------------------
+    // Phase 6.2 avatar semantics (PROMPT 6.2 §Gender / §Server-side allowlist):
+    //
+    //  1. Determine the effective NEW gender for this update. Use the
+    //     request value if supplied; otherwise the persisted value.
+    //  2. Determine the effective NEW avatar:
+    //       • If the client supplied a v3 payload that validates against
+    //         the two-character curated allowlist AND matches the new
+    //         gender, use it.
+    //       • Else if the gender changed, run the transition helper
+    //         (Karim → Kulthum / Kulthum → Karim, expression preserved
+    //         when possible, or fall back to the new gender's default).
+    //       • Else preserve the persisted avatar exactly — a stale
+    //         client can never null out or downgrade a valid avatar.
+    //     If the new gender is neutral, the persisted human avatar is
+    //     cleared to null (renderer draws BrandMark).
+    //  3. Write name + gender + avatar together in one UPDATE so
+    //     nothing observes a mid-transition state.
+    // -----------------------------------------------------------------
+
+    const previousGender = user.gender;
+    const newGender = input.gender !== undefined ? input.gender : previousGender;
+    const previousAvatar = isV3Config(user.avatarConfig) ? user.avatarConfig : null;
+
     if (input.gender !== undefined) {
       fields.push(`gender = $${i++}`);
       values.push(input.gender);
     }
+
+    let nextAvatar: AvatarConfigV3 | null | "preserve" = "preserve";
+
     if (input.avatarConfig !== undefined) {
-      const sanitized = sanitizeAvatarConfig(input.avatarConfig);
-      // Avatar config is optional — clear it if the client sent an invalid
-      // shape rather than throwing.
-      fields.push(`avatar_config = $${i++}::jsonb`);
-      values.push(sanitized ? JSON.stringify(sanitized) : null);
+      // Client-provided pick — must match the NEW gender.
+      const scoped = sanitizeAvatarConfigV3ForGender(input.avatarConfig, newGender);
+      if (scoped) nextAvatar = scoped;
+      // Malformed / opposite-gender / legacy → keep whatever server logic
+      // below decides (either preserve or gender-transition).
     }
+
+    if (nextAvatar === "preserve" && input.gender !== undefined && input.gender !== previousGender) {
+      // Gender changed and the client didn't supply a valid v3 for the
+      // new gender. Server derives the new avatar deterministically.
+      nextAvatar = avatarForGenderTransition(previousGender, newGender, previousAvatar);
+    }
+
+    if (nextAvatar !== "preserve") {
+      fields.push(`avatar_config = $${i++}::jsonb`);
+      values.push(nextAvatar ? JSON.stringify(nextAvatar) : null);
+    }
+    // else: preserve the persisted avatar exactly.
     if (fields.length === 0) {
       return { ok: true, user: toPublic(user) };
     }

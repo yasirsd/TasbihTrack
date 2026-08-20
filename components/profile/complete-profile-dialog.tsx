@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { useMigration } from "@/components/migration/migration-context";
@@ -129,26 +130,28 @@ export function CompleteProfileDialog() {
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="cp-first">First name</Label>
+            <FormField id="cp-first" label="First name">
               <Input
                 id="cp-first"
                 autoComplete="given-name"
+                autoCapitalize="words"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                placeholder="e.g. Yasir"
                 disabled={submitting}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cp-last">Last name</Label>
+            </FormField>
+            <FormField id="cp-last" label="Last name" optional>
               <Input
                 id="cp-last"
                 autoComplete="family-name"
+                autoCapitalize="words"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                placeholder="e.g. Ahmed"
                 disabled={submitting}
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="space-y-2">
@@ -185,7 +188,7 @@ export function CompleteProfileDialog() {
           {error && (
             <div
               role="alert"
-              className="rounded-2xl border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson"
+              className="rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
               {error}
             </div>

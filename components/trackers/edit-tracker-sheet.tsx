@@ -3,12 +3,13 @@ import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/ui/form-field";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
 import { targetToWords } from "@/lib/number-words";
+import { useEnsureFocusVisible } from "@/lib/keyboard/use-keyboard-viewport";
 import type { Tracker } from "@/lib/data/types";
 
 export function EditTrackerSheet({
@@ -30,6 +31,8 @@ export function EditTrackerSheet({
   const [targetDate, setTargetDate] = React.useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmTargetChange, setConfirmTargetChange] = React.useState(false);
+  const scrollRootRef = React.useRef<HTMLDivElement>(null);
+  useEnsureFocusVisible(scrollRootRef);
 
   React.useEffect(() => {
     if (!tracker) return;
@@ -80,99 +83,105 @@ export function EditTrackerSheet({
   return (
     <Sheet open={open} onOpenChange={(v) => (!submitting || v) && onOpenChange(v)}>
       <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Edit Goal</SheetTitle>
-        </SheetHeader>
-        <div className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="ename">Name</Label>
-            <Input id="ename" value={name} onChange={(e) => setName(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="etarget">Target</Label>
-            <Input
+        <div ref={scrollRootRef}>
+          <SheetHeader>
+            <SheetTitle>Edit Goal</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4">
+            <FormField id="ename" label="Goal name">
+              <Input
+                id="ename"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Durood Shareef"
+                disabled={submitting}
+              />
+            </FormField>
+            <FormField
               id="etarget"
-              inputMode="numeric"
-              enterKeyHint="next"
-              value={target}
-              onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
-              disabled={submitting}
-            />
-            {(() => {
-              const r = targetToWords(target);
-              if (!r) return null;
-              return (
-                <div className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2 text-sm">
-                  <p className="tabular-nums text-foreground">
-                    {r.value.toLocaleString("en-US")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{r.words}</p>
-                </div>
-              );
-            })()}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edaily">Daily target (optional)</Label>
-            <Input
-              id="edaily"
-              inputMode="numeric"
-              value={dailyTarget}
-              onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="—"
-              disabled={submitting}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edate">Target date</Label>
-            <TasbihDatePicker
-              id="edate"
-              value={targetDate}
-              onChange={setTargetDate}
-              placeholder="No target date"
-              disabled={submitting}
-              aria-label="Target date"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="earabic">Arabic text</Label>
-            <Input
-              id="earabic"
-              lang="ar"
-              dir="rtl"
-              value={arabic}
-              onChange={(e) => setArabic(e.target.value)}
-              disabled={submitting}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edesc">Description</Label>
-            <Textarea
-              id="edesc"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={submitting}
-            />
-          </div>
+              label="Target amount"
+              hint={(() => {
+                const r = targetToWords(target);
+                return r ? (
+                  <span className="flex flex-col gap-0.5">
+                    <span className="tabular-nums text-foreground">
+                      {r.value.toLocaleString("en-US")}
+                    </span>
+                    <span>{r.words}</span>
+                  </span>
+                ) : null;
+              })()}
+            >
+              <Input
+                id="etarget"
+                inputMode="numeric"
+                enterKeyHint="next"
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
+                disabled={submitting}
+              />
+            </FormField>
+            <FormField id="edaily" label="Daily target" optional>
+              <Input
+                id="edaily"
+                inputMode="numeric"
+                value={dailyTarget}
+                onChange={(e) => setDailyTarget(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="Auto if left blank"
+                disabled={submitting}
+              />
+            </FormField>
+            <FormField id="edate" label="Target date" optional>
+              <TasbihDatePicker
+                id="edate"
+                value={targetDate}
+                onChange={setTargetDate}
+                placeholder="No target date"
+                disabled={submitting}
+                aria-label="Target date"
+              />
+            </FormField>
+            <FormField id="earabic" label="Arabic text" optional>
+              <Input
+                id="earabic"
+                lang="ar"
+                dir="rtl"
+                value={arabic}
+                onChange={(e) => setArabic(e.target.value)}
+                placeholder="اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ"
+                disabled={submitting}
+              />
+            </FormField>
+            <FormField id="edesc" label="Description" optional>
+              <Textarea
+                id="edesc"
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Complete this over the next 3 months"
+                disabled={submitting}
+              />
+            </FormField>
 
-          {confirmTargetChange && targetChanged && tracker && (
-            <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3 text-sm">
-              Changing target from {tracker.targetCount.toLocaleString()} to{" "}
-              {Number(target).toLocaleString()}. History and milestones are preserved in the
-              Journey. Tap Save again to confirm.
-            </div>
-          )}
+            {confirmTargetChange && targetChanged && tracker && (
+              <div className="rounded-2xl border border-gold/40 bg-gold/10 p-3 text-sm">
+                Changing target from {tracker.targetCount.toLocaleString()} to{" "}
+                {Number(target).toLocaleString()}. History and milestones are preserved in the
+                Journey. Tap Save again to confirm.
+              </div>
+            )}
 
-          <PendingButton
-            variant="crimson"
-            size="lg"
-            className="w-full"
-            pending={submitting}
-            pendingLabel="Saving…"
-            onClick={submit}
-          >
-            Save changes
-          </PendingButton>
+            <PendingButton
+              variant="crimson"
+              size="lg"
+              className="w-full"
+              pending={submitting}
+              pendingLabel="Saving…"
+              onClick={submit}
+            >
+              Save changes
+            </PendingButton>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
