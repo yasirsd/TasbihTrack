@@ -53,7 +53,7 @@ export function TrackerCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="clay-card relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
+      className="clay-card clay-floating relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[hsl(var(--brand-1)/0.06)] to-transparent" />
       <div className="relative flex items-start justify-between gap-3">

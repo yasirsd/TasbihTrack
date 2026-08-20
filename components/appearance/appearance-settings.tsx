@@ -169,7 +169,11 @@ function ColorSwatch({
       aria-pressed={selected}
       aria-label={`${label}${selected ? " (selected)" : ""}`}
       className={cn(
-        "clay-btn group relative flex flex-col items-stretch overflow-hidden rounded-3xl border p-0 text-left transition-[transform,box-shadow,border-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background touch-manipulation active:scale-[0.98]",
+        // `.clay-color-tile` gives the tile a proper sculpted-pigment
+        // feel under Clay (upper highlight + soft shadow + lifted
+        // pressed state via aria-pressed). Standard mode keeps the
+        // existing thin border + ring.
+        "clay-btn clay-color-tile group relative flex flex-col items-stretch overflow-hidden rounded-3xl border p-0 text-left transition-[transform,box-shadow,border-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background touch-manipulation active:scale-[0.98]",
         selected
           ? "border-foreground/60 shadow-[0_10px_30px_-12px_hsl(var(--brand-1)/0.5)]"
           : "border-border/60 hover:border-foreground/30",

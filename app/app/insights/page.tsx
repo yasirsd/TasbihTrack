@@ -1,35 +1,80 @@
 "use client";
 import * as React from "react";
-import { motion } from "motion/react";
 import { useData } from "@/components/data/data-context";
 import {
   bestActivityDay,
   computeTrackerStats,
-  last7DayPoints,
   mostActiveTracker,
 } from "@/lib/calculations/progress";
 import { currentStreakDays, weeklyComparison } from "@/lib/calculations/pace";
 import { formatCompact, formatNumber, formatPercent } from "@/lib/format";
-import { formatShortDay, formatRelativeDate, todayKey } from "@/lib/date-utils";
+import { formatRelativeDate, todayKey } from "@/lib/date-utils";
+import {
+  INSIGHTS_RANGE_LABELS,
+  buildInsightsSeries,
+  type InsightsRange,
+} from "@/lib/calculations/insights-series";
+import { InsightsChart } from "@/components/insights/insights-chart";
+import { Segmented } from "@/components/ui/segmented";
 
+/**
+ * Phase 7 Insights.
+ *
+ * Persistent top KPIs: Today, This Week, Lifetime — always visible so
+ * these three commonly-referenced numbers don't shift when the graph
+ * range changes.
+ *
+ * Graph range is user-selectable: 7 Days / 30 Days / 1 Year / Lifetime.
+ * All aggregation is done by `buildInsightsSeries` — see its test
+ * file for the exact aggregation rules and boundary behavior.
+ */
 export default function InsightsPage() {
   const { entries, trackers } = useData();
+  const [range, setRange] = React.useState<InsightsRange>("7d");
+
   const today = todayKey();
-  const todayTotal = entries
-    .filter((e) => e.entryDate === today)
-    .reduce((a, b) => a + b.amount, 0);
-  const points = last7DayPoints(entries);
-  const weekTotal = points.reduce((a, b) => a + b.amount, 0);
-  const allTime = entries.reduce((a, b) => a + b.amount, 0);
-  const peak = points.reduce((max, p) => Math.max(max, p.amount), 0);
-  const activeTrackers = trackers.filter(
-    (t) => t.status !== "archived",
+
+  // Persistent KPIs — independent of the graph range.
+  const todayTotal = React.useMemo(
+    () =>
+      entries.filter((e) => e.entryDate === today).reduce((a, b) => a + b.amount, 0),
+    [entries, today],
   );
+  const weekSeries = React.useMemo(
+    () => buildInsightsSeries(entries, "7d"),
+    [entries],
+  );
+  const weekTotal = weekSeries.total;
+  const allTime = React.useMemo(
+    () => entries.reduce((a, b) => a + b.amount, 0),
+    [entries],
+  );
+
+  const series = React.useMemo(
+    () => buildInsightsSeries(entries, range),
+    [entries, range],
+  );
+
+  // How many X-axis labels to render for each range. Sparse-labelling
+  // rule so nothing overlaps on mobile.
+  const labelStride = React.useMemo(() => {
+    switch (series.range) {
+      case "7d":
+        return 1;
+      case "30d":
+        return 5;
+      case "1y":
+        return 2;
+      case "lifetime":
+        // At most ~8 labels regardless of series length.
+        return Math.max(1, Math.ceil(series.points.length / 8));
+    }
+  }, [series.range, series.points.length]);
+
+  const activeTrackers = trackers.filter((t) => t.status !== "archived");
   const bestGoal = mostActiveTracker(activeTrackers, entries);
   const bestDay = bestActivityDay(entries);
   const weekly = weeklyComparison(entries);
-  // Streak is now always calculated (§60). We only surface it when it is
-  // meaningful — hidden entirely at 0 to avoid guilt UX (§61, §62).
   const streak = currentStreakDays(entries);
   const showStreak = streak > 0;
 
@@ -37,87 +82,103 @@ export default function InsightsPage() {
     <div className="space-y-6">
       <header className="px-1">
         <h1 className="text-2xl font-semibold tracking-tight">Insights</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Your journey, at a glance.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Your journey, at a glance.
+        </p>
       </header>
 
-      <section className="clay-card grid grid-cols-3 divide-x divide-border/40 rounded-3xl border border-border/60 bg-card">
+      {/* Persistent KPIs */}
+      <section className="clay-card clay-raised grid grid-cols-3 divide-x divide-border/40 rounded-3xl border border-border/60 bg-card">
         <Stat label="Today" value={formatNumber(todayTotal)} />
-        <Stat label="Last 7 days" value={formatNumber(weekTotal)} />
-        <Stat label="All time" value={formatCompact(allTime)} />
+        <Stat label="This Week" value={formatNumber(weekTotal)} />
+        <Stat label="Lifetime" value={formatCompact(allTime)} />
       </section>
 
-      <section className="clay-card rounded-3xl border border-border/60 bg-card p-5">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Last 7 days
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {peak > 0 ? `Peak ${formatNumber(peak)}` : "No activity"}
-          </p>
+      {/* Graph — range switcher + chart + range-scoped summary */}
+      <section className="clay-card clay-raised space-y-4 rounded-3xl border border-border/60 bg-card p-4 sm:p-5">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Progress
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {series.peak > 0
+                ? `Peak ${formatCompact(series.peak)}`
+                : "No activity"}
+            </p>
+          </div>
+          <Segmented<InsightsRange>
+            ariaLabel="Insights range"
+            value={range}
+            onChange={setRange}
+            size="sm"
+            options={[
+              { value: "7d", label: INSIGHTS_RANGE_LABELS["7d"] },
+              { value: "30d", label: INSIGHTS_RANGE_LABELS["30d"] },
+              { value: "1y", label: INSIGHTS_RANGE_LABELS["1y"] },
+              { value: "lifetime", label: INSIGHTS_RANGE_LABELS.lifetime },
+            ]}
+          />
         </div>
-        <div className="flex h-40 items-end gap-2">
-          {points.map((p) => {
-            const height = peak > 0 ? Math.max(4, (p.amount / peak) * 100) : 4;
-            const isToday = p.key === today;
-            return (
-              <div key={p.key} className="flex flex-1 flex-col items-center gap-2">
-                <div className="relative flex h-full w-full items-end">
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${height}%` }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                    className={`w-full rounded-lg ${
-                      isToday
-                        ? "bg-gradient-to-t from-crimson to-crimson-soft"
-                        : "bg-muted"
-                    }`}
-                    style={{ minHeight: 4 }}
-                  />
-                  {p.amount > 0 && (
-                    <span className="pointer-events-none absolute inset-x-0 -top-5 text-center text-[10px] tabular-nums text-muted-foreground">
-                      {formatCompact(p.amount)}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {formatShortDay(p.key)}
-                </span>
-              </div>
-            );
-          })}
+        <InsightsChart
+          series={series}
+          labelStride={labelStride}
+          ariaLabel={`Progress over ${INSIGHTS_RANGE_LABELS[range].toLowerCase()}`}
+        />
+        <div className="grid grid-cols-3 gap-2 pt-1 sm:gap-3">
+          <RangeStat label="Total" value={formatCompact(series.total)} />
+          <RangeStat
+            label="Average"
+            value={series.activeBuckets > 0 ? formatCompact(series.average) : "—"}
+          />
+          <RangeStat label="Peak" value={formatCompact(series.peak)} />
         </div>
       </section>
 
+      {/* Trends + streak */}
       <section className="grid gap-3 sm:grid-cols-2">
-        <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">This week vs last</p>
+        <div className="clay-metric clay-raised rounded-2xl border border-border/60 bg-card p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            This week vs last
+          </p>
           <p className="mt-1 text-lg font-semibold tabular-nums">
-            {formatNumber(weekly.thisWeek)} <span className="text-sm text-muted-foreground">vs {formatNumber(weekly.lastWeek)}</span>
+            {formatNumber(weekly.thisWeek)}{" "}
+            <span className="text-sm text-muted-foreground">
+              vs {formatNumber(weekly.lastWeek)}
+            </span>
           </p>
           {weekly.diffPercent !== null && (
-            <p className={`text-xs ${weekly.diffPercent >= 0 ? "text-emerald-500" : "text-crimson"}`}>
+            <p
+              className={`text-xs ${weekly.diffPercent >= 0 ? "text-emerald-500" : "text-crimson"}`}
+            >
               {weekly.diffPercent >= 0 ? "+" : ""}
-              {weekly.diffPercent.toFixed(0)}% {weekly.diffPercent >= 0 ? "more" : "less"} than last week
+              {weekly.diffPercent.toFixed(0)}%{" "}
+              {weekly.diffPercent >= 0 ? "more" : "less"} than last week
             </p>
           )}
         </div>
         {showStreak && (
-          <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Current streak</p>
+          <div className="clay-metric clay-raised rounded-2xl border border-border/60 bg-card p-4">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Current streak
+            </p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {streak} {streak === 1 ? "day" : "days"}
             </p>
-            <p className="text-xs text-muted-foreground">Consecutive days with any progress.</p>
+            <p className="text-xs text-muted-foreground">
+              Consecutive days with any progress.
+            </p>
           </div>
         )}
       </section>
 
+      {/* Goal progress */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Goal Progress
         </h2>
         {activeTrackers.length === 0 ? (
-          <div className="clay-card rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
+          <div className="clay-card clay-raised rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
             Your insights will appear as you begin logging progress.
           </div>
         ) : (
@@ -125,7 +186,10 @@ export default function InsightsPage() {
             {activeTrackers.map((t) => {
               const s = computeTrackerStats(t, entries);
               return (
-                <div key={t.id} className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
+                <div
+                  key={t.id}
+                  className="clay-metric clay-raised rounded-2xl border border-border/60 bg-card p-4"
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{t.name}</p>
@@ -137,9 +201,9 @@ export default function InsightsPage() {
                       {formatPercent(s.percent, s.percent < 10 ? 1 : 0)}
                     </p>
                   </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="clay-progress-track mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
+                      className="clay-progress-fill h-full rounded-full bg-gradient-to-r from-gold via-crimson to-crimson-deep"
                       style={{ width: `${Math.min(100, s.percent)}%` }}
                     />
                   </div>
@@ -153,18 +217,20 @@ export default function InsightsPage() {
       {(bestGoal || bestDay) && (
         <section className="grid gap-3 sm:grid-cols-2">
           {bestGoal && (
-            <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
+            <div className="clay-metric clay-raised rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Most active goal
               </p>
-              <p className="mt-1 text-base font-medium">{bestGoal.tracker.name}</p>
+              <p className="mt-1 text-base font-medium">
+                {bestGoal.tracker.name}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {formatNumber(bestGoal.total)} recorded
               </p>
             </div>
           )}
           {bestDay && (
-            <div className="clay-metric rounded-2xl border border-border/60 bg-card p-4">
+            <div className="clay-metric clay-raised rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Personal best
               </p>
@@ -189,6 +255,17 @@ function Stat({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function RangeStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="clay-inset-well rounded-xl px-3 py-2 text-center">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

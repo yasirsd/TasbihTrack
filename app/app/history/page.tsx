@@ -98,7 +98,7 @@ export default function HistoryPage() {
                   +{formatNumber(g.total)}
                 </p>
               </div>
-              <div className="clay-card divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
+              <div className="clay-card clay-list-row divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
                 {g.entries.map((e) => (
                   <EntryItem key={e.id} entry={e} tracker={trackerMap.get(e.trackerId)} />
                 ))}

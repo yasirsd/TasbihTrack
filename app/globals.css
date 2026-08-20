@@ -534,14 +534,22 @@
 }
 
 /* Auto-apply the Clay surface look to standard content cards when Clay is
- * active. Cards keep their existing className; Clay just repaints them. */
+ * active. Cards keep their existing className; Clay just repaints them.
+ *
+ * Phase 7: rebuilt with a three-layer sculpted shadow recipe (soft
+ * ambient depth + deeper contact shadow + upper highlight) and a
+ * near-transparent border so it reads as sculpted MATERIAL rather than
+ * "dark card with a grey outline". Consistent upper-left light source
+ * across every Clay primitive. */
 [data-ui-style="clay"] .clay-card {
   background: hsl(var(--clay-surface));
-  border: 1px solid hsl(var(--clay-surface-alt));
-  border-radius: 32px;
+  border: 1px solid hsl(var(--clay-highlight) / 0.06);
+  border-radius: 28px;
   box-shadow:
-    0 22px 40px -22px hsl(var(--clay-shadow) / 0.28),
-    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.5);
+    0 1px 0 0 hsl(var(--clay-highlight) / 0.35) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.15) inset,
+    0 6px 14px -6px hsl(var(--clay-shadow) / 0.22),
+    0 22px 36px -24px hsl(var(--clay-shadow) / 0.35);
 }
 
 /* ------- Clay button ----------------------------------------------------- */
@@ -688,15 +696,36 @@
 }
 
 /* ------- Clay nav ------------------------------------------------------- */
+/* Phase 7 — the bottom nav is one of the strongest FLOATING surfaces in
+ * the product. Rebuilt with a deeper contact shadow, an upper highlight
+ * that reads as light from above-left, and no grey outline. Also serves
+ * as the reference for .clay-dock. */
 [data-ui-style="clay"] .app-bottom-nav {
-  background: hsl(var(--clay-surface));
-  border: 1px solid hsl(var(--clay-surface-alt));
-  border-radius: 34px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-surface)) 0%,
+    hsl(var(--clay-surface-alt)) 100%
+  );
+  border: 1px solid hsl(var(--clay-highlight) / 0.08);
+  border-radius: 32px;
   box-shadow:
-    0 22px 40px -22px hsl(var(--clay-shadow) / 0.35),
-    inset 0 2px 0 0 hsl(var(--clay-highlight) / 0.55);
+    0 1.5px 0 0 hsl(var(--clay-highlight) / 0.45) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.18) inset,
+    0 10px 22px -8px hsl(var(--clay-shadow) / 0.30),
+    0 28px 44px -24px hsl(var(--clay-shadow) / 0.45);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Selected bottom-nav item — recessed clay well the icon sits inside. */
+[data-ui-style="clay"] .app-bottom-nav a[data-active="true"],
+[data-ui-style="clay"] .app-bottom-nav [data-active="true"] {
+  background: hsl(var(--clay-inset));
+  color: hsl(var(--clay-primary));
+  box-shadow:
+    inset 0 2px 4px 0 hsl(var(--clay-shadow) / 0.20),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.35);
+  border-radius: 999px;
 }
 
 /* ------- Clay metric slab — used by tracker detail / insights ---------- */
@@ -817,6 +846,125 @@
   box-shadow:
     0 8px 16px -10px hsl(var(--clay-shadow) / 0.28),
     inset 0 1.5px 0 0 hsl(var(--clay-highlight) / 0.5);
+}
+
+/* =============================================================================
+ * PHASE 7 — FOUR ELEVATION PRIMITIVES
+ *
+ * The whole product's Clay depth is expressed through exactly four classes,
+ * all scoped to `[data-ui-style="clay"]` so Standard mode is completely
+ * unaffected:
+ *
+ *   .clay-raised     — normal cards + sections. 2-layer soft shadow.
+ *   .clay-floating   — hero surfaces (Add Progress button, primary goal
+ *                      card, celebration surface). 3-layer sculpted depth.
+ *   .clay-inset-well — pressed cavity (chart plot area, control tray,
+ *                      inputs, progress track, segmented track).
+ *   .clay-pressed    — interactive active state.
+ *
+ * Shadow budget: no primitive uses more than 4 shadow layers. Repeated
+ * list rows use `.clay-list-row` (2 lightweight layers) so a long
+ * History scroll never renders 50 heavy sculpted shadows.
+ *
+ * Light source is upper-left across every primitive.
+ * ========================================================================== */
+
+[data-ui-style="clay"] .clay-raised {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-highlight) / 0.06);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 0 0 hsl(var(--clay-highlight) / 0.35) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.12) inset,
+    0 6px 14px -8px hsl(var(--clay-shadow) / 0.22),
+    0 18px 32px -22px hsl(var(--clay-shadow) / 0.30);
+}
+
+[data-ui-style="clay"] .clay-floating {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--clay-surface)) 0%,
+    hsl(var(--clay-surface-alt)) 100%
+  );
+  border: 1px solid hsl(var(--clay-highlight) / 0.08);
+  border-radius: 30px;
+  box-shadow:
+    0 1.5px 0 0 hsl(var(--clay-highlight) / 0.45) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.18) inset,
+    0 10px 20px -6px hsl(var(--clay-shadow) / 0.28),
+    0 28px 44px -20px hsl(var(--clay-shadow) / 0.45);
+}
+
+[data-ui-style="clay"] .clay-inset-well {
+  background: hsl(var(--clay-inset));
+  border: 1px solid transparent;
+  border-radius: 20px;
+  box-shadow:
+    inset 0 3px 6px 0 hsl(var(--clay-shadow) / 0.18),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.4),
+    inset 0 8px 14px -8px hsl(var(--clay-shadow) / 0.10);
+}
+
+[data-ui-style="clay"] .clay-pressed,
+[data-ui-style="clay"] .clay-raised:active,
+[data-ui-style="clay"] .clay-floating:active {
+  transform: translateY(1.5px);
+  transition:
+    transform 100ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 100ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.15) inset,
+    inset 0 2px 4px 0 hsl(var(--clay-shadow) / 0.20),
+    0 2px 6px -4px hsl(var(--clay-shadow) / 0.15);
+}
+
+/* Lightweight variant for tightly-packed repeated rows (History, Journey
+ * entries). One shadow + top highlight — sculpted enough to read as
+ * clay without paying the full 4-layer cost 50 times per scroll. */
+[data-ui-style="clay"] .clay-list-row {
+  background: hsl(var(--clay-surface));
+  border: 1px solid hsl(var(--clay-highlight) / 0.05);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 0 0 hsl(var(--clay-highlight) / 0.30) inset,
+    0 4px 10px -6px hsl(var(--clay-shadow) / 0.18);
+}
+
+/* Chart plotting area — a wide inset well. Used by Insights so the
+ * chart itself sits physically recessed into the surface. */
+[data-ui-style="clay"] .clay-chart-well {
+  background:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      hsl(var(--clay-inset)) 0%,
+      hsl(var(--clay-inset)) 60%,
+      hsl(var(--clay-shadow) / 0.05) 100%
+    );
+  border: 1px solid transparent;
+  border-radius: 20px;
+  box-shadow:
+    inset 0 4px 8px 0 hsl(var(--clay-shadow) / 0.20),
+    inset 0 -1px 0 0 hsl(var(--clay-highlight) / 0.35),
+    inset 0 12px 20px -8px hsl(var(--clay-shadow) / 0.12);
+}
+
+/* Color-theme sample tile in Profile → Appearance. Sculpted pigment
+ * sample rather than a flat colored rectangle. */
+[data-ui-style="clay"] .clay-color-tile {
+  border: 1px solid hsl(var(--clay-highlight) / 0.08);
+  border-radius: 22px;
+  box-shadow:
+    0 1px 0 0 hsl(var(--clay-highlight) / 0.35) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.15) inset,
+    0 8px 16px -8px hsl(var(--clay-shadow) / 0.25);
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-ui-style="clay"] .clay-color-tile[aria-pressed="true"] {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 0 hsl(var(--clay-highlight) / 0.45) inset,
+    0 -1px 0 0 hsl(var(--clay-shadow) / 0.18) inset,
+    0 12px 24px -8px hsl(var(--clay-shadow) / 0.35);
 }
 
 /* ------- Autofilled inputs — WebKit paints its own yellow. Recolor so

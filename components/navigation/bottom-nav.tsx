@@ -58,6 +58,10 @@ function NavItem({ item, active }: { item: (typeof items)[number]; active: boole
   return (
     <Link
       href={item.href}
+      // `data-active` is what the Clay `.app-bottom-nav a[data-active="true"]`
+      // rule keys off — under Clay the selected item shows as an inset
+      // well rather than the Standard-mode Motion pill.
+      data-active={active ? "true" : undefined}
       className={cn(
         "relative flex h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -68,7 +72,7 @@ function NavItem({ item, active }: { item: (typeof items)[number]; active: boole
       {active && (
         <motion.span
           layoutId="bottom-nav-active"
-          className="absolute inset-x-1 inset-y-0.5 rounded-full bg-muted"
+          className="absolute inset-x-1 inset-y-0.5 rounded-full bg-muted [html[data-ui-style=clay]_&]:hidden"
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
         />
       )}
