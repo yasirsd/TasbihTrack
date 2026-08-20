@@ -4,12 +4,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { GenderControl } from "@/components/ui/gender-control";
 import { useEnsureFocusVisible } from "@/lib/keyboard/use-keyboard-viewport";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { UserAvatar } from "@/components/avatar/user-avatar";
 import type { AvatarConfig, Gender } from "@/lib/data/types";
-import { cn } from "@/lib/utils";
 
 interface EditProfileSheetProps {
   open: boolean;
@@ -100,19 +100,19 @@ export function EditProfileSheet({ open, onOpenChange, initial }: EditProfileShe
           </SheetHeader>
 
           <div className="space-y-5">
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-3">
               <UserAvatar
                 config={initial.avatarConfig}
-                size={96}
+                size={104}
                 alt=""
                 ariaHidden
                 loading="eager"
-                className="rounded-full"
+                className="rounded-full ring-2 ring-border/60 ring-offset-2 ring-offset-background"
               />
+              <p className="clay-inset-well max-w-xs rounded-2xl border border-border/50 bg-muted/40 px-3 py-2 text-center text-xs text-muted-foreground">
+                To change your avatar, use <strong>Customize Avatar</strong> in Profile.
+              </p>
             </div>
-            <p className="rounded-2xl border border-border/60 bg-muted/40 px-3 py-2 text-center text-xs text-muted-foreground">
-              To change your avatar, use <strong>Customize Avatar</strong> in Profile.
-            </p>
 
             <div className="grid grid-cols-2 gap-3">
               <FormField id="ep-first" label="First name">
@@ -141,36 +141,14 @@ export function EditProfileSheet({ open, onOpenChange, initial }: EditProfileShe
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Gender</p>
+              <GenderControl
+                value={gender}
+                onChange={setGender}
+                disabled={submitting}
+              />
               <p className="text-xs text-muted-foreground">
                 Changing gender does not change your saved avatar.
               </p>
-              <div role="radiogroup" className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["male", "Male"],
-                    ["female", "Female"],
-                    ["prefer_not_to_say", "Prefer not to say"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    type="button"
-                    key={value}
-                    role="radio"
-                    aria-checked={gender === value}
-                    onClick={() => setGender(value)}
-                    disabled={submitting}
-                    className={cn(
-                      "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      gender === value
-                        ? "border-foreground/20 bg-foreground text-background"
-                        : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/40",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {error && (
@@ -184,7 +162,7 @@ export function EditProfileSheet({ open, onOpenChange, initial }: EditProfileShe
 
             <PendingButton
               variant="crimson"
-              size="lg"
+              size="xl"
               className="w-full"
               pending={submitting}
               pendingLabel="Saving…"

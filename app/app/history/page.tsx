@@ -5,6 +5,7 @@ import { groupByDay } from "@/lib/calculations/progress";
 import { formatNumber } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date-utils";
 import { EntryItem } from "@/components/entries/entry-item";
+import { Segmented } from "@/components/ui/segmented";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,21 @@ const TasbihCalendar = dynamic(
 
 type View = "timeline" | "calendar";
 
+/**
+ * History — Phase 7.2 P0.4 Clay rebuild.
+ *
+ * Visual language changes:
+ *   • Timeline / Calendar switch now uses the shared `Segmented`
+ *     primitive so its Clay treatment (inset tray + raised active pill)
+ *     matches the auth surface and Insights range picker exactly.
+ *   • Goal filter chips use `.clay-chip` — larger touch area (≥40 px)
+ *     and unmistakable selected state.
+ *   • Each entry row sits in its own `.clay-list-row` pill instead of
+ *     a single divided pillbox. Lighter shadow recipe (per the elevation
+ *     model) so long scrolls don't get expensive.
+ *   • Date-group headings stay as typography-only — the spec explicitly
+ *     forbids wrapping every date in a card.
+ */
 export default function HistoryPage() {
   const { entries, trackers } = useData();
   const [filter, setFilter] = React.useState<string>("all");
@@ -39,29 +55,19 @@ export default function HistoryPage() {
         </p>
       </header>
 
-      <div className="clay-segmented flex items-center gap-0.5 rounded-full border border-border/50 bg-muted/30 p-1 text-xs">
-        {(
-          [
-            ["timeline", "Timeline"],
-            ["calendar", "Calendar"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setView(id)}
-            className={cn(
-              "flex-1 rounded-full px-3 py-1.5 font-medium transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              view === id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground/80",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented<View>
+        ariaLabel="Timeline or calendar"
+        value={view}
+        onChange={setView}
+        // Phase 7.2 P0.1 touch-target closure — lifted from md (44 px)
+        // to lg (52 px) so the History view switch meets the same
+        // audit as the Auth mode segmented.
+        size="lg"
+        options={[
+          { value: "timeline", label: "Timeline" },
+          { value: "calendar", label: "Calendar" },
+        ]}
+      />
 
       {trackers.length > 0 && (
         <div
@@ -82,27 +88,29 @@ export default function HistoryPage() {
       {view === "calendar" ? (
         <TasbihCalendar trackerId={filter === "all" ? undefined : filter} />
       ) : groups.length === 0 ? (
-        <div className="clay-card rounded-3xl border border-border/60 bg-card p-8 text-center">
+        <div className="clay-card clay-raised rounded-3xl border border-border/60 bg-card p-8 text-center">
           <p className="text-base font-medium">No progress recorded yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             When you add progress, it will appear here.
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {groups.map((g) => (
             <section key={g.key}>
-              <div className="mb-1.5 flex items-baseline justify-between px-1">
+              <div className="mb-2 flex items-baseline justify-between px-1">
                 <h2 className="text-sm font-medium">{formatRelativeDate(g.key)}</h2>
                 <p className="text-xs tabular-nums text-muted-foreground">
                   +{formatNumber(g.total)}
                 </p>
               </div>
-              <div className="clay-card clay-list-row divide-y divide-border/40 rounded-3xl border border-border/60 bg-card/60 px-2">
+              <ul className="space-y-2">
                 {g.entries.map((e) => (
-                  <EntryItem key={e.id} entry={e} tracker={trackerMap.get(e.trackerId)} />
+                  <li key={e.id} className="clay-list-row rounded-2xl border border-border/40 bg-card/70 px-1">
+                    <EntryItem entry={e} tracker={trackerMap.get(e.trackerId)} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
           ))}
         </div>
@@ -123,8 +131,12 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
+      // Larger comfortable touch target (~40 px) + `.clay-chip` for the
+      // raised pigmented tile look under Clay. Selected state is
+      // signalled with brand-tinted fill + weight, never color alone.
+      data-active={active ? "true" : undefined}
       className={cn(
-        "shrink-0 snap-start rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "clay-chip shrink-0 snap-start rounded-full border px-4 py-2 text-xs font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-foreground/20 bg-foreground text-background shadow-sm"

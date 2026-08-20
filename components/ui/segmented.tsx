@@ -36,10 +36,21 @@ export function Segmented<T extends string>({
   className,
   ...divProps
 }: SegmentedProps<T>) {
-  const heights: Record<"sm" | "md" | "lg", string> = {
-    sm: "h-9 text-xs",
-    md: "h-11 text-sm",
-    lg: "h-13 text-base",
+  // Sizes are picked so Phase 7.2 P0.6 touch targets are met.
+  //   sm  → 36px (dense chips)
+  //   md  → 44px (Insights range picker — Phase 7.2 P0.1 minimum)
+  //   lg  → 52px (auth mode + History view — the primary segmented row)
+  //
+  // Horizontal padding is scaled with the size AND kept mildly tight so
+  // four labels ("7 Days / 30 Days / 1 Year / Lifetime") still fit in
+  // the ≥44 px `md` tray at a 320 px viewport. `whitespace-nowrap` is
+  // enforced on the buttons themselves to prevent multi-line wrap when
+  // a cell is narrower than its label — the label may nudge its cell
+  // wider (still within 320 px in practice), never break lines.
+  const sizeStyles: Record<"sm" | "md" | "lg", string> = {
+    sm: "h-9 text-xs px-2",
+    md: "h-11 text-sm px-2.5",
+    lg: "h-[52px] text-base px-4",
   };
 
   const groupRef = React.useRef<HTMLDivElement>(null);
@@ -83,8 +94,8 @@ export function Segmented<T extends string>({
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative inline-flex select-none items-center justify-center rounded-full px-3 font-medium transition-[background,color,transform,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation active:scale-[0.98]",
-              heights[size],
+              "relative inline-flex min-w-0 select-none items-center justify-center whitespace-nowrap rounded-full font-medium transition-[background,color,transform,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation active:scale-[0.98]",
+              sizeStyles[size],
               active
                 ? "bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_10px_-4px_rgba(0,0,0,0.10)]"
                 : "text-muted-foreground hover:text-foreground",

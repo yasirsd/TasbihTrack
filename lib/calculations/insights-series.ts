@@ -52,7 +52,13 @@ export interface InsightsSeries {
   peak: number;
   /** Non-zero bucket count — used for "active days" in the range summary. */
   activeBuckets: number;
-  /** Average across NON-EMPTY buckets — rounded to nearest whole. */
+  /**
+   * Average per bucket across ALL buckets — including zero-value ones —
+   * rounded to the nearest whole. Denominator is `points.length` so a
+   * 7-day range divides by 7, a 1-year range by 12, and a lifetime
+   * range by however many buckets it generated. This matches the
+   * "Avg / Day" or "Avg / Month" reading the UI shows below the chart.
+   */
   average: number;
 }
 
@@ -283,8 +289,10 @@ function finalize(
   const total = points.reduce((a, p) => a + p.amount, 0);
   const peak = points.reduce((max, p) => (p.amount > max ? p.amount : max), 0);
   const activeBuckets = points.filter((p) => p.amount > 0).length;
+  // Average is per-bucket including zero buckets — Phase 7.2 P0.3 semantics.
+  // Empty-series case (points.length === 0) returns 0 without dividing.
   const average =
-    activeBuckets === 0 ? 0 : Math.round(total / activeBuckets);
+    points.length === 0 ? 0 : Math.round(total / points.length);
   return {
     range,
     bucket,

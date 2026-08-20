@@ -19,8 +19,23 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: [{ url: "/icons/favicon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    // Phase 7.2 P0.2 — iOS Safari does not honour SVG for the
+    // apple-touch-icon slot; before this pass it was falling back to a
+    // rasterised web-clip preview (the silver "1" tile). We now ship a
+    // proper 180×180 PNG for Home Screen installs. Desktop browsers +
+    // Android Chrome keep using the crisp SVG favicon.
+    icon: [
+      { url: "/icons/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-v2-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-v2-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      {
+        url: "/icons/apple-touch-icon-v2-180.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
   openGraph: {
     title: "1011 Tracker",

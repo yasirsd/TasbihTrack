@@ -33,6 +33,11 @@ const buttonVariants = cva(
         default: "h-11 px-5",
         sm: "h-9 px-4 text-sm",
         lg: "h-12 px-6 text-base",
+        // xl is the primary-CTA size (Phase 7.2 P0.6 touch-target audit).
+        // 56 px is comfortably above the 48 px mobile threshold and reads
+        // as the dominant action on the page (Sign In / Create Account /
+        // Create Goal / Save Profile).
+        xl: "h-14 px-7 text-base font-semibold",
         icon: "h-10 w-10 p-0",
         pill: "h-9 px-3 text-xs",
       },

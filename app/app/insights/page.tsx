@@ -111,7 +111,12 @@ export default function InsightsPage() {
             ariaLabel="Insights range"
             value={range}
             onChange={setRange}
-            size="sm"
+            // Phase 7.2 P0.1 touch-target closure — bumped from sm (36 px)
+            // to md (44 px) so the range picker meets the ≥44 px audit.
+            // The shared `md` size uses tighter horizontal padding
+            // (`px-2.5`) so the four labels "7 Days / 30 Days / 1 Year /
+            // Lifetime" fit at a 320 px viewport with no line wrap.
+            size="md"
             options={[
               { value: "7d", label: INSIGHTS_RANGE_LABELS["7d"] },
               { value: "30d", label: INSIGHTS_RANGE_LABELS["30d"] },
@@ -128,8 +133,8 @@ export default function InsightsPage() {
         <div className="grid grid-cols-3 gap-2 pt-1 sm:gap-3">
           <RangeStat label="Total" value={formatCompact(series.total)} />
           <RangeStat
-            label="Average"
-            value={series.activeBuckets > 0 ? formatCompact(series.average) : "—"}
+            label={series.bucket === "month" ? "Avg / Month" : "Avg / Day"}
+            value={series.points.length > 0 ? formatCompact(series.average) : "—"}
           />
           <RangeStat label="Peak" value={formatCompact(series.peak)} />
         </div>
@@ -261,11 +266,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function RangeStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="clay-inset-well rounded-xl px-3 py-2 text-center">
+    <div className="clay-inset-well rounded-2xl px-3 py-2.5 text-center">
       <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
+      <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+        {value}
+      </p>
     </div>
   );
 }

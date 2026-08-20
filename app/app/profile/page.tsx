@@ -162,12 +162,26 @@ export default function ProfilePage() {
       </header>
 
       <Section title="Account">
-        <Button variant="outline" onClick={() => setShowChangePw(true)}>
-          <Shield className="h-4 w-4" /> Change password
-        </Button>
-        <Button variant="ghost" onClick={handleSignOut} className="text-crimson">
-          <LogOut className="h-4 w-4" /> Sign out
-        </Button>
+        {/* Phase 7.2 P0.5 — two balanced equal-width controls. Both use
+         * the outline variant so they share visual weight; Sign Out is
+         * tinted crimson to read as secondary/destructive without
+         * shouting. `h-12` (48 px) meets the touch-target audit. */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowChangePw(true)}
+            className="h-12 w-full"
+          >
+            <Shield className="h-4 w-4" /> Change password
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="h-12 w-full text-crimson"
+          >
+            <LogOut className="h-4 w-4" /> Sign out
+          </Button>
+        </div>
       </Section>
 
       <Section title="Appearance">

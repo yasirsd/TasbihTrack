@@ -1,0 +1,45 @@
+<!--
+  1011 Tracker app-icon source (Phase 7.2 P0.2).
+
+  Rendered by scripts/generate-pwa-icons.mjs into the PNG assets iOS and
+  Android home-screen installers need. Rules baked into this source:
+
+    • Square canvas, 1024x1024. No manual rounded corners — iOS applies
+      its own rounded mask, and pre-rounding here creates a visible
+      double-mask halo on Home Screen.
+    • Flat opaque background — a transparent background would produce
+      the "silver / monochrome" iOS fallback that motivated this hotfix.
+    • Central glyph sized to leave ~14% padding on every side, so the
+      1011 mark stays fully visible after Apple's ~22% rounded-square
+      mask is applied.
+    • The mark is the approved 1011 identity: three tall bars + a ring
+      in the crimson→gold brand gradient (see components/brand/logo.tsx).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDC500"/>
+      <stop offset="60%" stop-color="#EF233C"/>
+      <stop offset="100%" stop-color="#B21728"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#1a1a1c"/>
+      <stop offset="100%" stop-color="#09090B"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Flat, opaque, full-bleed background. No rx: Apple / Android mask. -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!--
+    Glyph geometry: same proportions as the existing 512-viewBox icon,
+    scaled x2. Positions in original viewBox (x/width): 80/56, ring at
+    cx=216 r=84 (stroke 56), 320/56, 400/56. Doubled and offset for a
+    balanced margin — the glyph spans roughly x=160..912 in 1024, giving
+    ~14% padding on each side.
+  -->
+  <rect x="160" y="288" width="112" height="448" rx="56" fill="url(#g)"/>
+  <circle cx="432" cy="512" r="168" fill="none" stroke="url(#g)" stroke-width="112"/>
+  <rect x="640" y="288" width="112" height="448" rx="56" fill="url(#g)"/>
+  <rect x="800" y="288" width="112" height="448" rx="56" fill="url(#g)"/>
+</svg>

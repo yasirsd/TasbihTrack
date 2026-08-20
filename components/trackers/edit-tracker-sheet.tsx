@@ -8,7 +8,7 @@ import { FormField } from "@/components/ui/form-field";
 import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
-import { targetToWords } from "@/lib/number-words";
+import { formatIndianDigits, targetToWords } from "@/lib/number-words";
 import { useEnsureFocusVisible } from "@/lib/keyboard/use-keyboard-viewport";
 import type { Tracker } from "@/lib/data/types";
 
@@ -103,20 +103,16 @@ export function EditTrackerSheet({
               hint={(() => {
                 const r = targetToWords(target);
                 return r ? (
-                  <span className="flex flex-col gap-0.5">
-                    <span className="tabular-nums text-foreground">
-                      {r.value.toLocaleString("en-US")}
-                    </span>
-                    <span>{r.words}</span>
-                  </span>
+                  <span className="text-sm text-foreground">{r.words}</span>
                 ) : null;
               })()}
             >
               <Input
                 id="etarget"
                 inputMode="numeric"
+                pattern="[0-9,]*"
                 enterKeyHint="next"
-                value={target}
+                value={formatIndianDigits(target)}
                 onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
                 disabled={submitting}
               />

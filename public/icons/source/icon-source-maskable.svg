@@ -1,0 +1,36 @@
+<!--
+  1011 Tracker maskable app-icon source (Phase 7.2 P0.2).
+
+  Rendered by scripts/generate-pwa-icons.mjs into the PWA "maskable"
+  icon that Android launchers reshape (circle / squircle / rounded
+  square) per device theme. Differences vs icon-source.svg:
+
+    • The glyph fits inside the standard maskable safe zone — an
+      inner ~80% radius circle. That means the actual glyph is scaled
+      to ~60% of the canvas so nothing gets cropped when the launcher
+      punches a circle.
+    • Background is flat and full-bleed (opaque) so any mask shape
+      lands on a clean brand-dark ground.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDC500"/>
+      <stop offset="60%" stop-color="#EF233C"/>
+      <stop offset="100%" stop-color="#B21728"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#09090B"/>
+
+  <!--
+    Glyph roughly x=272..752 (~48% of canvas width), vertically
+    centered — fits inside the standard 80% radius maskable safe zone
+    with margin to spare. Same proportional geometry as the full-bleed
+    icon, just smaller and re-anchored.
+  -->
+  <rect x="272" y="352" width="80" height="320" rx="40" fill="url(#g)"/>
+  <circle cx="464" cy="512" r="120" fill="none" stroke="url(#g)" stroke-width="80"/>
+  <rect x="608" y="352" width="80" height="320" rx="40" fill="url(#g)"/>
+  <rect x="720" y="352" width="80" height="320" rx="40" fill="url(#g)"/>
+</svg>

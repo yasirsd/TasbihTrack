@@ -6,30 +6,28 @@ import { PendingButton } from "@/components/ui/pending-button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Segmented } from "@/components/ui/segmented";
+import { GenderControl } from "@/components/ui/gender-control";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import type { Gender } from "@/lib/data/types";
-import { cn } from "@/lib/utils";
 
 type Mode = "signIn" | "signUp";
 
 /**
- * Auth surface — post-Phase-5 P0 rescue (PROMPT 5A §1–§7).
+ * Auth surface — Phase 7.2 P0.1 premium rebuild.
  *
- * The active mode is signalled two ways that agree with each other:
- *   1. A prominent segmented control at the top: SIGN IN / CREATE ACCOUNT.
- *      Selected option gets a raised background (Clay lifts it out of the
- *      inset tray via .clay-segmented).
- *   2. A distinct title/subtitle per mode (never the same copy).
- *
- * Every field uses <FormField label="…"> so labels ALWAYS stay visible.
- * Placeholders are example text only ("e.g. yasir") and render in the
- * weak --placeholder token so users cannot mistake them for a real value.
- *
- * No AnimatePresence swap: we keep both trees under the segmented control
- * and simply show/hide, so switching modes is instantaneous. Removing the
- * mode-switch animation is intentional — it was one of the "everything
- * feels slow" contributors on real devices.
+ * Layout hierarchy (top-to-bottom):
+ *   1. `Segmented` tab-strip (SIGN IN / CREATE ACCOUNT) at `lg` size —
+ *      52-px comfortable touch target, inset tray under Clay.
+ *   2. Raised auth shell (`.clay-raised` under Clay, subtle bordered
+ *      card in Standard) wrapping the active form. This is what makes
+ *      the form feel physically connected to the page rather than
+ *      floating without anchor.
+ *   3. Distinct title/subtitle per mode.
+ *   4. Persistent labels via `FormField`; placeholders as example only.
+ *   5. Shared `GenderControl` — same primitive as Edit Profile so both
+ *      surfaces are visually and behaviorally identical (P0.7).
+ *   6. Primary CTA at size="xl" (56 px) — the dominant page action.
  */
 export function AuthForm({
   onModeChange,
@@ -49,7 +47,7 @@ export function AuthForm({
   const { toast } = useToast();
 
   return (
-    <div className="w-full max-w-md space-y-5">
+    <div className="w-full max-w-md space-y-4">
       <Segmented<Mode>
         ariaLabel="Sign in or create account"
         value={mode}
@@ -61,31 +59,36 @@ export function AuthForm({
         ]}
       />
 
-      <div className="text-center">
-        {mode === "signIn" ? (
-          <>
-            <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Sign in to continue your journey.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Create your account
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Begin your 1011 journey.
-            </p>
-          </>
-        )}
-      </div>
+      <section
+        className="clay-raised rounded-3xl border border-border/60 bg-card/95 p-5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.15)] sm:p-6"
+        aria-label={mode === "signIn" ? "Sign in form" : "Create account form"}
+      >
+        <div className="mb-5 text-center">
+          {mode === "signIn" ? (
+            <>
+              <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sign in to continue your journey.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Create your account
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Begin your 1011 journey.
+              </p>
+            </>
+          )}
+        </div>
 
-      {mode === "signIn" ? (
-        <SignInForm service={service} toast={toast} router={router} />
-      ) : (
-        <SignUpForm service={service} toast={toast} router={router} />
-      )}
+        {mode === "signIn" ? (
+          <SignInForm service={service} toast={toast} router={router} />
+        ) : (
+          <SignUpForm service={service} toast={toast} router={router} />
+        )}
+      </section>
     </div>
   );
 }
@@ -177,7 +180,7 @@ function SignInForm({ service, toast, router }: FormShared) {
       <PendingButton
         type="submit"
         variant="crimson"
-        size="lg"
+        size="xl"
         className="w-full"
         pending={submitting}
         pendingLabel="Signing in…"
@@ -264,32 +267,7 @@ function SignUpForm({ service, toast, router }: FormShared) {
 
       <div className="space-y-2">
         <p className="text-sm font-medium">Gender</p>
-        <div role="radiogroup" className="flex flex-wrap gap-2">
-          {(
-            [
-              ["male", "Male"],
-              ["female", "Female"],
-              ["prefer_not_to_say", "Prefer not to say"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              type="button"
-              key={value}
-              role="radio"
-              aria-checked={gender === value}
-              onClick={() => setGender(value)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-[background,color,transform] duration-150 touch-manipulation active:scale-[0.98]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                gender === value
-                  ? "border-foreground/20 bg-foreground text-background shadow-sm"
-                  : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/40",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <GenderControl value={gender} onChange={setGender} />
       </div>
 
       <FormField
@@ -336,7 +314,7 @@ function SignUpForm({ service, toast, router }: FormShared) {
       <PendingButton
         type="submit"
         variant="crimson"
-        size="lg"
+        size="xl"
         className="w-full"
         pending={submitting}
         pendingLabel="Creating account…"

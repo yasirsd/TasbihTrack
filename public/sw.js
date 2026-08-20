@@ -9,7 +9,7 @@
  * current app shell VERSION nor the current AVATAR_CACHE_NAME is
  * dropped. That's how the pre-Phase-6 "tasbih-v1" cache and any
  * previous dapvatar version's cache get cleaned up automatically. */
-const VERSION = "1011-v4";
+const VERSION = "1011-v5";
 /* 1011 curated avatar asset set version. Bumping this string picks a
  * fresh cache namespace so upgraded assets can never conflict with
  * cached bytes from a previous version. */
@@ -42,8 +42,11 @@ self.addEventListener("install", (event) => {
             "/app/insights",
             "/app/profile",
             "/manifest.webmanifest",
-            "/icons/icon.svg",
             "/icons/favicon.svg",
+            "/icons/apple-touch-icon-v2-180.png",
+            "/icons/icon-v2-192.png",
+            "/icons/icon-v2-512.png",
+            "/icons/icon-maskable-v2-512.png",
           ])
           .catch(() => undefined),
       ),

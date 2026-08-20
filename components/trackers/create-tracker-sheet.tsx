@@ -9,7 +9,7 @@ import { useData } from "@/components/data/data-context";
 import { useToast } from "@/components/ui/toast";
 import { TasbihDatePicker } from "@/components/date/tasbih-date-picker";
 import { todayKey } from "@/lib/date-utils";
-import { targetToWords } from "@/lib/number-words";
+import { formatIndianDigits, targetToWords } from "@/lib/number-words";
 import { useEnsureFocusVisible } from "@/lib/keyboard/use-keyboard-viewport";
 
 /**
@@ -131,25 +131,23 @@ export function CreateTrackerSheet({
               label="Target amount"
               hint={
                 targetReadout ? (
-                  <span className="flex flex-col gap-0.5">
-                    <span className="tabular-nums text-foreground">
-                      {targetReadout.value.toLocaleString("en-US")}
-                    </span>
-                    <span>{targetReadout.words}</span>
-                  </span>
+                  <span className="text-sm text-foreground">{targetReadout.words}</span>
                 ) : (
-                  "Enter as digits — commas and words appear below."
+                  "Enter as digits — Indian-format grouping appears inside the field."
                 )
               }
             >
               <Input
                 id="ttarget"
                 inputMode="numeric"
-                pattern="[0-9]*"
+                pattern="[0-9,]*"
                 enterKeyHint="next"
-                value={target}
+                // Display the Indian-formatted string so `100000` reads
+                // as `1,00,000` inside the field. The underlying `target`
+                // state stays pure digits so business logic is unaffected.
+                value={formatIndianDigits(target)}
                 onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="e.g. 100000"
+                placeholder="e.g. 1,00,000"
                 disabled={submitting}
               />
             </FormField>
@@ -182,9 +180,12 @@ export function CreateTrackerSheet({
               />
             </FormField>
 
-            <details className="group rounded-2xl border border-border/60 bg-muted/20 p-3">
-              <summary className="cursor-pointer text-sm text-muted-foreground">
-                Additional details
+            <details className="group clay-list-row rounded-2xl border border-border/60 bg-muted/20 p-3">
+              <summary className="flex cursor-pointer select-none items-center justify-between gap-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                <span>Additional details</span>
+                <span aria-hidden className="text-xs text-muted-foreground/70 transition-transform duration-200 group-open:rotate-180">
+                  ⌄
+                </span>
               </summary>
               <div className="mt-3 grid gap-3">
                 <FormField id="tdaily" label="Custom daily target" optional>
@@ -236,7 +237,7 @@ export function CreateTrackerSheet({
             )}
             <PendingButton
               variant="crimson"
-              size="lg"
+              size="xl"
               className="w-full"
               pending={submitting}
               pendingLabel="Creating goal…"

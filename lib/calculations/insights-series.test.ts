@@ -81,14 +81,35 @@ describe("Insights range: 7 Days", () => {
     expect(s.points[6].label.length).toBeLessThanOrEqual(5);
   });
 
-  it("average is over non-empty buckets only (never divides by zero)", () => {
+  it("average is per-bucket including zeros (Phase 7.2 P0.3)", () => {
+    // Two active days summing to 300, five zero days → average 300 / 7 = 43.
     const s = buildInsightsSeries(
       [entry(toLocalDateKey(NOW), 100), entry(keyDaysAgo(1), 200)],
       "7d",
       NOW,
     );
     expect(s.activeBuckets).toBe(2);
-    expect(s.average).toBe(150);
+    expect(s.average).toBe(43);
+  });
+
+  it("empty 7-day range averages to 0 without dividing by zero", () => {
+    const s = buildInsightsSeries([], "7d", NOW);
+    expect(s.average).toBe(0);
+  });
+});
+
+describe("Insights average semantics — per-range denominators", () => {
+  it("7-day average divides by 7 (Avg / Day)", () => {
+    const s = buildInsightsSeries([entry(toLocalDateKey(NOW), 700)], "7d", NOW);
+    expect(s.average).toBe(100); // 700 / 7
+  });
+  it("30-day average divides by 30 (Avg / Day)", () => {
+    const s = buildInsightsSeries([entry(toLocalDateKey(NOW), 3000)], "30d", NOW);
+    expect(s.average).toBe(100); // 3000 / 30
+  });
+  it("1-year average divides by 12 (Avg / Month)", () => {
+    const s = buildInsightsSeries([entry("2026-08-01", 1200)], "1y", NOW);
+    expect(s.average).toBe(100); // 1200 / 12
   });
 });
 

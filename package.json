@@ -12,7 +12,8 @@
     "lint:sql": "node scripts/lint-sql.mjs supabase/migrations/0001_init.sql && node scripts/lint-sql.mjs supabase/migrations/0002_user_profile.sql && node scripts/lint-sql.mjs supabase/migrations/0003_dapvatar_only.sql && node scripts/lint-sql.mjs supabase/migrations/0004_two_character_avatar.sql && node scripts/lint-sql.mjs supabase/migrations/0005_remove_bad_word_expression.sql",
     "db:test": "node scripts/test-db.mjs",
     "avatars:verify": "node scripts/verify-1011-avatar-assets.mjs",
-    "prebuild": "node scripts/verify-1011-avatar-assets.mjs"
+    "icons:generate": "node scripts/generate-pwa-icons.mjs",
+    "prebuild": "node scripts/verify-1011-avatar-assets.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",
@@ -56,6 +57,7 @@
     "happy-dom": "^15.11.7",
     "pgsql-parser": "^13.19.1",
     "postcss": "^8.5.26",
+    "sharp": "^0.35.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
