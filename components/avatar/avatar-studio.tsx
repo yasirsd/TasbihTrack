@@ -8,7 +8,7 @@ import { UserAvatar } from "@/components/avatar/user-avatar";
 import { useAuth } from "@/components/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { avatarAssetUrl } from "@/lib/avatar/dapvatar-adapter";
+import { avatarAssetUrl } from "@/lib/avatar/avatar-engine";
 import {
   AVATAR_CHARACTER_BY_ID,
   KARIM,

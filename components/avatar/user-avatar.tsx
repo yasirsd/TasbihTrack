@@ -8,7 +8,7 @@ import {
   AVATAR_ASSET_BASE,
   postureKeyFromPostureId,
   reactionPostureIdFor,
-} from "@/lib/avatar/dapvatar-adapter";
+} from "@/lib/avatar/avatar-engine";
 
 /**
  * The single component every non-editor place in the app uses to display

@@ -6,7 +6,7 @@ import {
   DEFAULT_FEMALE_POSTURE_ID,
   DEFAULT_MALE_POSTURE_ID,
   avatarAssetUrlFromPostureId,
-} from "./dapvatar-adapter";
+} from "./avatar-engine";
 import { AVATAR_ASSET_SET_VERSION, KARIM, KULTHUM } from "./manifest";
 
 function assetPathFromUrl(url: string): string {

@@ -18,37 +18,35 @@ const AVATAR_CACHE_NAME = "1011-avatar-" + AVATAR_SET_VERSION;
 const AVATAR_PATH_PREFIX = "/avatar-assets/" + AVATAR_SET_VERSION + "/";
 
 self.addEventListener("install", (event) => {
+  /* Phase 6.2.1: NO human-avatar PNG is precached at install.
+   *
+   * 1011 has strict gender-curated avatars — a male user's browser
+   * must not download Kulthum artwork just because the PWA was
+   * installed, and vice versa. Both defaults still cache-warm on
+   * first render via the /avatar-assets/v1/* strategy below (which
+   * is cache-first + cache-on-successful-first-use), so returning
+   * users pay a single request per avatar rather than a bulk pre-
+   * download.
+   *
+   * The service worker stays identity-agnostic — it never reads the
+   * signed-in user's gender to decide what to precache. */
   event.waitUntil(
-    Promise.all([
-      caches
-        .open(VERSION)
-        .then((cache) =>
-          cache
-            .addAll([
-              "/",
-              "/app/dashboard",
-              "/app/history",
-              "/app/insights",
-              "/app/profile",
-              "/manifest.webmanifest",
-              "/icons/icon.svg",
-              "/icons/favicon.svg",
-            ])
-            .catch(() => undefined),
-        ),
-      caches
-        .open(AVATAR_CACHE_NAME)
-        .then((cache) =>
-          /* Precache ONLY the two universal defaults. Each is ~10-15 KB
-           * so PWA install stays small. Everything else is cache-on-use. */
-          cache
-            .addAll([
-              AVATAR_PATH_PREFIX + "male-karim-white/01-happy.png",
-              AVATAR_PATH_PREFIX + "female-kulthum-white/05-heart-eye.png",
-            ])
-            .catch(() => undefined),
-        ),
-    ]),
+    caches
+      .open(VERSION)
+      .then((cache) =>
+        cache
+          .addAll([
+            "/",
+            "/app/dashboard",
+            "/app/history",
+            "/app/insights",
+            "/app/profile",
+            "/manifest.webmanifest",
+            "/icons/icon.svg",
+            "/icons/favicon.svg",
+          ])
+          .catch(() => undefined),
+      ),
   );
   self.skipWaiting();
 });

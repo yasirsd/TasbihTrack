@@ -21,7 +21,10 @@ const ROOT = resolve(HERE, "..");
 
 const ROOT_DIR = join(ROOT, "public", "avatar-assets", "v1");
 const EXPECTED_CHARACTERS = ["male-karim-white", "female-kulthum-white"];
-const EXPECTED_EXPRESSIONS_PER_CHARACTER = 29;
+// Phase 6.2.1 removed the source-pack "bad-word" expression (posture #14).
+// The curated manifest defines 28 expressions per character (29 minus the
+// removed one); on-disk PNGs must match.
+const EXPECTED_EXPRESSIONS_PER_CHARACTER = 28;
 const REQUIRED = [
   "male-karim-white/01-happy.png",
   "male-karim-white/05-heart-eye.png",
@@ -33,6 +36,11 @@ const REQUIRED = [
   "female-kulthum-white/08-star-eye.png",
   "female-kulthum-white/11-party.png",
   "female-kulthum-white/07-mind-blowing.png",
+];
+// Files that must NOT be present after Phase 6.2.1 cleanup.
+const FORBIDDEN = [
+  "male-karim-white/14-bad-word.png",
+  "female-kulthum-white/14-bad-word.png",
 ];
 
 function die(msg) {
@@ -70,6 +78,12 @@ function main() {
     if (!existsSync(p)) die(`required asset missing: ${rel}`);
     const size = statSync(p).size;
     if (size < 1024) die(`asset suspiciously small (${size}B): ${rel}`);
+  }
+
+  for (const rel of FORBIDDEN) {
+    if (existsSync(join(ROOT_DIR, rel))) {
+      die(`asset must be removed (Phase 6.2.1 cleanup): ${rel}`);
+    }
   }
 
   let bytes = 0;

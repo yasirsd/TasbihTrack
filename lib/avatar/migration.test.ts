@@ -6,7 +6,7 @@ import {
   DEFAULT_FEMALE_POSTURE_ID,
   DEFAULT_MALE_CHARACTER_ID,
   DEFAULT_MALE_POSTURE_ID,
-} from "./dapvatar-adapter";
+} from "./avatar-engine";
 
 /**
  * Phase 6.1 — legacy v1/v2 → Dapvatar default migration behaviour.

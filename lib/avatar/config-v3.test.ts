@@ -13,7 +13,7 @@ import {
   DEFAULT_FEMALE_POSTURE_ID,
   DEFAULT_MALE_CHARACTER_ID,
   DEFAULT_MALE_POSTURE_ID,
-} from "./dapvatar-adapter";
+} from "./avatar-engine";
 import {
   AVATAR_CHARACTERS,
   AVATAR_CHARACTER_BY_ID,
@@ -44,9 +44,17 @@ describe("Curated manifest — exactly two characters", () => {
     expect(AVATAR_CHARACTER_BY_ID["male-justin-white"]).toBeUndefined();
   });
 
-  it("each character has 29 expressions", () => {
+  it("each character has 28 expressions (Phase 6.2.1 removed 'bad-word')", () => {
     for (const c of AVATAR_CHARACTERS) {
-      expect(c.expressions.length).toBe(29);
+      expect(c.expressions.length).toBe(28);
+    }
+  });
+
+  it("no character exposes the removed 'bad-word' expression", () => {
+    // Cast to string so this test survives TS narrowing after the union
+    // stripped the literal — the runtime assertion is what matters.
+    for (const c of AVATAR_CHARACTERS) {
+      expect(c.expressions.some((e) => (e.key as string) === "bad-word")).toBe(false);
     }
   });
 
@@ -118,6 +126,22 @@ describe("sanitizeAvatarConfigV3 — allowlist rejects everything else", () => {
         postureId: `${DEFAULT_FEMALE_CHARACTER_ID}-99-happy`,
       }),
     ).toBeNull();
+  });
+
+  it("rejects the removed 'bad-word' posture on both characters (Phase 6.2.1)", () => {
+    for (const id of [
+      "male-karim-white-14-bad-word",
+      "female-kulthum-white-14-bad-word",
+    ]) {
+      expect(
+        sanitizeAvatarConfigV3({
+          version: 3,
+          engine: "dapvatar",
+          characterId: id.replace(/-14-bad-word$/, ""),
+          postureId: id,
+        }),
+      ).toBeNull();
+    }
   });
 
   it("rejects cross-character posture (Kulthum id + Karim posture)", () => {

@@ -43,6 +43,41 @@ describe("Service worker — cache cleanup scope (§2)", () => {
   });
 });
 
+describe("Service worker — no human-avatar precache at install (Phase 6.2.1 §1)", () => {
+  const sw = readSw();
+
+  it("install handler does NOT call cache.addAll on any /avatar-assets/v1/*.png", () => {
+    // A male user must not download Kulthum artwork on install, and
+    // vice versa. Human avatars cache-warm on first render instead —
+    // enforced by keeping their URLs out of the install-time addAll.
+    expect(sw).not.toMatch(/AVATAR_PATH_PREFIX \+ "male-karim-white/);
+    expect(sw).not.toMatch(/AVATAR_PATH_PREFIX \+ "female-kulthum-white/);
+    expect(sw).not.toMatch(/male-karim-white\/01-happy\.png/);
+    expect(sw).not.toMatch(/female-kulthum-white\/05-heart-eye\.png/);
+  });
+
+  it("install does NOT even open the AVATAR_CACHE_NAME cache", () => {
+    // The install path is now app-shell only; there's no reason to open
+    // the dedicated avatar cache at install time.
+    const install = sw.slice(sw.indexOf('addEventListener("install"'));
+    const installBody = install.slice(0, install.indexOf('addEventListener("activate"'));
+    expect(installBody).not.toContain("AVATAR_CACHE_NAME");
+  });
+
+  it("SW never reads any user identity to decide what to cache (stays identity-agnostic)", () => {
+    // "gender" and "profile" appear only in explanatory comments and in
+    // the /app/profile app-shell URL — those are positive markers, not
+    // regressions. What we're actually guarding against is a code path
+    // that branches on the signed-in user, so we check identifiers that
+    // could only appear if such logic were introduced.
+    expect(sw).not.toMatch(/\buserId\b/i);
+    expect(sw).not.toMatch(/\bsessionUser\b/i);
+    expect(sw).not.toMatch(/cookies?\./i);
+    expect(sw).not.toMatch(/localStorage\./i);
+    expect(sw).not.toMatch(/indexedDB\./i);
+  });
+});
+
 describe("Service worker — avatar cache success criteria (§3)", () => {
   const sw = readSw();
 

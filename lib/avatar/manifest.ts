@@ -30,7 +30,11 @@ export type PostureKey =
   | "party"
   | "angry"
   | "triumph"
-  | "bad-word"
+  // Phase 6.2.1: the source-pack "bad-word" expression is intentionally
+  // NOT part of 1011's curated set. Its posture number (14) is skipped
+  // in the shared numbering table, and the corresponding PNG is deleted
+  // from public/avatar-assets/v1/. The server rejects any config
+  // referencing it because the manifest is authoritative.
   | "grinning"
   | "winking"
   | "happy-winking"
@@ -92,7 +96,7 @@ const CURATED_LABELS: Record<PostureKey, string> = {
   party: "Party",
   angry: "Angry",
   triumph: "Triumph",
-  "bad-word": "Bad Word",
+  // "bad-word" removed in Phase 6.2.1 — no key, no label, no file.
   grinning: "Grinning",
   winking: "Winking",
   "happy-winking": "Happy Winking",
@@ -124,7 +128,7 @@ const POSTURE_ORDER: readonly { key: PostureKey; num: number }[] = [
   { key: "party", num: 11 },
   { key: "angry", num: 12 },
   { key: "triumph", num: 13 },
-  { key: "bad-word", num: 14 },
+  // Posture #14 ("bad-word") intentionally skipped.
   { key: "grinning", num: 15 },
   { key: "winking", num: 16 },
   { key: "happy-winking", num: 17 },

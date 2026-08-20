@@ -12,7 +12,7 @@ import {
   postureKeyFromPostureId,
   postureLabel,
   reactionPostureIdFor,
-} from "./dapvatar-adapter";
+} from "./avatar-engine";
 
 describe("avatar adapter — Phase 6.2 versioned URL derivation", () => {
   it("asset base matches the curated 1011 asset set version (v1)", () => {
